@@ -43,6 +43,44 @@ formr_api_access_token = function(client_id, client_secret, host = "https://api.
 }
 .formr_current_session <- .store_formr_current_session()
 
+#' Authenticate with the formr API
+#'
+#' Automatically authenticates using the best available method:
+#' 1. A one-time-token (OTT) from the webapp environment.
+#' 2. Client ID / Secret (for local scripts).
+#'
+#' @param client_id Your client_id (optional, for local scripts)
+#' @param client_secret Your client_secret (optional, for local scripts)
+#' @param host The API host (optional, for local scripts)
+#' @export
+formr_api_authenticate <- function(client_id = NULL, client_secret = NULL, host = "https.api.formr.org") {
+	
+	# --- Priority 1: One-Time-Token (Best) ---
+	# This is the most secure method, for in-app R scripts
+	env_ott   <- Sys.getenv("FORMR_API_OTT")
+	env_host  <- Sys.getenv("FORMR_API_HOST")
+	
+	if (env_ott != "" && env_host != "") {
+		message("Authenticating using secure one-time-token.")
+		base_url <- httr::parse_url(env_host)
+		# Use the OTT as the access_token
+		base_url$query <- list(access_token = env_ott) 
+		.formr_current_session$set(base_url)
+		
+	} else if (!is.null(client_id) && !is.null(client_secret)) {
+		# --- Priority 2: Client Credentials (Local Dev) ---
+		message("Authenticating using client credentials.")
+		# This calls the token function we already fixed
+		formr_api_access_token(client_id, client_secret, host)
+		
+	} else {
+		# --- No credentials found ---
+		stop("Could not find API credentials. \n",
+				 "  - If running locally, please provide client_id and client_secret.\n",
+				 "  - If running in the webapp, this may be a configuration error.",
+				 call. = FALSE)
+	}
+}
 
 #' Get current API session
 #' Return or set URL in list form for formr API (if available)
