@@ -199,6 +199,53 @@ formr_get_results <- function(run_name, surveys = NULL, sessions = NULL) {
 	if (length(tidy_results) == 1) tidy_results[[1]] else tidy_results
 }
 
+#' Authenticate with the formr API
+#'
+#' Establishes an authenticated session with the formr API. This function supports
+#' two authentication methods: a secure One-Time Token (OTT) or OAuth Client Credentials.
+#'
+#' @param client_id Character string. The OAuth Client ID. Required if \code{ott} is not provided.
+#' @param client_secret Character string. The OAuth Client Secret. Required if \code{ott} is not provided.
+#' @param host Character string. The base URL of the formr instance. Defaults to
+#'   "https://api.formr.org". Can also be set via the \code{FORMR_API_HOST} environment variable.
+#' @param ott Character string. A secure One-Time Token. If provided, this takes precedence
+#'   over client credentials. Can also be set via the \code{FORMR_API_OTT} environment variable.
+#'
+#' @details
+#' The function attempts to authenticate using the following priority order:
+#'
+#' \enumerate{
+#'   \item **One-Time Token (OTT):** Checks the \code{ott} argument, then the
+#'   \code{FORMR_API_OTT} environment variable. This is the preferred method when
+#'   running code within the formr web application.
+#'   \item **Client Credentials:** Checks for \code{client_id} and \code{client_secret}.
+#'   This is the standard method for local development or external scripts.
+#' }
+#'
+#' If the host is not provided directly, the function looks for the \code{FORMR_API_HOST}
+#' environment variable before defaulting to the official formr instance.
+#'
+#' @return Returns \code{TRUE} invisibly upon successful authentication.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Method 1: Using Client Credentials (Local)
+#' formr_api_authenticate(
+#'   client_id = "your_id",
+#'   client_secret = "your_secret"
+#' )
+#'
+#' # Method 2: Using OTT (implicitly via environment variable in webapp)
+#' formr_api_authenticate()
+#'
+#' # Method 3: Specifying a custom host
+#' formr_api_authenticate(
+#'   client_id = "id",
+#'   client_secret = "secret",
+#'   host = "https://custom-formr.org"
+#' )
+#' }
 formr_api_authenticate <- function(client_id = NULL, client_secret = NULL,
 																	 host = "https://api.formr.org", ott = NULL) {
 	
