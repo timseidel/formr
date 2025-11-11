@@ -12,3 +12,4 @@ graph_run
 ^codecov\.yml$
 .lintr
 .DS_Store
+.tims_zeug
