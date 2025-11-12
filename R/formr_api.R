@@ -201,73 +201,105 @@ formr_get_results <- function(run_name, surveys = NULL, sessions = NULL) {
 
 #' Authenticate with the formr API
 #'
-#' Establishes an authenticated session with the formr API. This function supports
-#' two authentication methods: a secure One-Time Token (OTT) or OAuth Client Credentials.
+#' Establishes an authenticated session with the formr API using either an access token
+#' or OAuth client credentials. This is a convenience wrapper around 
+#' [formr_api_access_token()] that handles multiple authentication scenarios.
 #'
-#' @param client_id Character string. The OAuth Client ID. Required if \code{ott} is not provided.
-#' @param client_secret Character string. The OAuth Client Secret. Required if \code{ott} is not provided.
-#' @param host Character string. The base URL of the formr instance. Defaults to
-#'   "https://api.formr.org". Can also be set via the \code{FORMR_API_HOST} environment variable.
-#' @param ott Character string. A secure One-Time Token. If provided, this takes precedence
-#'   over client credentials. Can also be set via the \code{FORMR_API_OTT} environment variable.
+#' @param client_id Character string. The OAuth Client ID for authentication.
+#'   Required when using client credentials authentication (typically for local development).
+#' @param client_secret Character string. The OAuth Client Secret for authentication.
+#'   Required when using client credentials authentication (typically for local development).
+#' @param host Character string. The base URL of the formr API instance.
+#'   Defaults to "https://api.formr.org".
+#' @param access_token Character string. A pre-generated access token for authentication.
+#'   When provided, this takes precedence over client credentials. If NULL (default),
+#'   the function will check for an \code{access_token} variable in the calling environment.
+#'   This is the preferred method when running code within the formr web application 
+#'   (OpenCPU environment).
 #'
 #' @details
-#' The function attempts to authenticate using the following priority order:
+#' The function supports two authentication methods with the following priority:
 #'
 #' \enumerate{
-#'   \item **One-Time Token (OTT):** Checks the \code{ott} argument, then the
-#'   \code{FORMR_API_OTT} environment variable. This is the preferred method when
-#'   running code within the formr web application.
-#'   \item **Client Credentials:** Checks for \code{client_id} and \code{client_secret}.
-#'   This is the standard method for local development or external scripts.
+#'   \item **Access Token (Direct):** If \code{access_token} is provided and non-empty,
+#'   or if an \code{access_token} variable exists in the calling environment, it will 
+#'   be used directly for API authentication without making an OAuth request. This method 
+#'   is recommended when running within the formr OpenCPU environment.
+#'   \item **Client Credentials (OAuth 2.0):** If both \code{client_id} and 
+#'   \code{client_secret} are provided, the function calls [formr_api_access_token()]
+#'   to obtain an access token via the OAuth 2.0 client credentials grant flow.
+#'   This method is suitable for local development and external scripts.
 #' }
 #'
-#' If the host is not provided directly, the function looks for the \code{FORMR_API_HOST}
-#' environment variable before defaulting to the official formr instance.
+#' At least one authentication method must be provided. If neither method has the required
+#' parameters, the function will raise an error with guidance on proper usage.
+#'
+#' After successful authentication, the session information is stored internally and will
+#' be used automatically by other formr API functions like [formr_get_results()].
+#' You can retrieve the current session with [formr_api_session()].
 #'
 #' @return Returns \code{TRUE} invisibly upon successful authentication.
+#' 
+#' @seealso 
+#' \code{\link{formr_api_access_token}} for the underlying OAuth authentication,
+#' \code{\link{formr_api_session}} to retrieve the current session,
+#' \code{\link{formr_get_results}} to fetch data after authentication.
+#' 
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' # Method 1: Using Client Credentials (Local)
+#' # Method 1: Using Client Credentials (for local development)
 #' formr_api_authenticate(
-#'   client_id = "your_id",
-#'   client_secret = "your_secret"
+#'   client_id = "your_client_id",
+#'   client_secret = "your_client_secret"
 #' )
 #'
-#' # Method 2: Using OTT (implicitly via environment variable in webapp)
-#' formr_api_authenticate()
+#' # Method 2: Using Access Token directly
+#' formr_api_authenticate(access_token = "your_token_here")
 #'
-#' # Method 3: Specifying a custom host
+#' # Method 3: Using Access Token from environment variable
+#' # Set environment variable first: Sys.setenv(FORMR_ACCESS_TOKEN = "your_token")
+#' formr_api_authenticate()  # Will automatically use FORMR_ACCESS_TOKEN
+#'
+#' # Method 4: Custom host with client credentials
 #' formr_api_authenticate(
-#'   client_id = "id",
-#'   client_secret = "secret",
-#'   host = "https://custom-formr.org"
+#'   client_id = "your_client_id",
+#'   client_secret = "your_client_secret",
+#'   host = "https://custom-formr-instance.org"
 #' )
+#' 
+#' # After authentication, you can fetch data
+#' results <- formr_get_results(run_name = "my_study")
 #' }
 formr_api_authenticate <- function(client_id = NULL, client_secret = NULL,
-																	 host = "https://api.formr.org", ott = NULL) {
+																	 host = "https://api.formr.org", access_token = NULL) {
 	
-	ott_val <- if (!is.null(ott)) ott else Sys.getenv("FORMR_API_OTT", unset = "")
-	host_val <- if (!is.null(host)) host else Sys.getenv("FORMR_API_HOST", unset = "https://api.formr.org")
+	# Check for access_token in R environment if not provided
+	if (is.null(access_token) && exists("access_token", envir = parent.frame())) {
+		access_token <- get("access_token", envir = parent.frame())
+	}
 	
-	if (nzchar(ott_val)) {
-		message("Authenticating using secure one-time-token.")
-		base_url <- httr::parse_url(host_val)
-		base_url$query <- list(access_token = ott_val)
+	# Use access token if available
+	if (nzchar(access_token)) {
+		message("Authenticating using access_token.")
+		base_url <- httr::parse_url(host)
+		base_url$query <- list(access_token = access_token)
 		.formr_current_session$set(base_url)
 		return(invisible(TRUE))
 	}
 	
+	# Fall back to client credentials
 	if (!is.null(client_id) && !is.null(client_secret)) {
 		message("Authenticating using client credentials.")
-		formr_api_access_token(client_id, client_secret, host_val)
+		formr_api_access_token(client_id, client_secret, host)
 		return(invisible(TRUE))
 	}
 	
+	# No valid authentication method found
 	stop("Could not find API credentials. \n",
 			 " - If running locally, please provide client_id and client_secret.\n",
-			 " - If running in the webapp, supply OTT or set FORMR_API_OTT.",
+			 " - If running within formr (opencpu), ensure an access_token variable exists in your workspace,\n",
+			 "   or supply the access_token parameter directly.",
 			 call. = FALSE)
 }
