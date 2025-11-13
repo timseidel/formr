@@ -4,7 +4,7 @@
 #'
 #' @param client_id your client_id
 #' @param client_secret your client_secret
-#' @param host defaults to https://formr.org
+#' @param host defaults to https://api.formr.org
 #' @export
 #' @examples
 #' @importFrom dplyr bind_rows
@@ -15,7 +15,6 @@
 formr_api_access_token = function(client_id, client_secret, host = "https://api.formr.org/") {
 	base_url = httr::parse_url(host)
 	
-	.formr_current_session$set(base_url)
 	token_url = base_url
 	token_url$path = paste0(token_url$path, "oauth/access_token")
 	
@@ -30,8 +29,11 @@ formr_api_access_token = function(client_id, client_secret, host = "https://api.
 		stop("Error using formr API: ", token$error_code, " ", 
 				 token$error, " ", token$description)
 	}
-	base_url$query = list(access_token = token$access_token)
-	.formr_current_session$set(base_url)
+	
+	# Store base_url and token separately in the session
+	session_data <- list(base_url = base_url, token = token$access_token)
+	.formr_current_session$set(session_data)
+	
 	message("Successfully connected to formr API")
 	print(result)
 }
@@ -57,7 +59,7 @@ formr_api_session = function() {
 #' After obtaining a token from formr, use this request
 #'
 #' @param request parameter (see example, API docs)
-#' @param token defaults to last used token
+#' @param token DEPRECATED. The token is now retrieved from the session automatically.
 #' 
 #' @export
 #' @examples
@@ -74,13 +76,26 @@ formr_api_session = function() {
 
 formr_api_results = function(request = NULL, token = NULL) {
 	stopifnot(!is.null(request))
-	get_url = formr_api_session()
+	
 	if (!is.null(token)) {
-		get_url = token
+		warning("The 'token' argument in formr_api_results() is deprecated and will be ignored. Authentication is handled by the session.")
 	}
-	get_url$path = paste0(get_url$path, "get/results")
-	result = httr::GET(get_url, query = request)
-	res = httr::content(result)
+	
+	session_data <- formr_api_session()
+	if (is.null(session_data) || is.null(session_data$token)) {
+		stop("Not authenticated. Please run formr_api_authenticate() first.", call. = FALSE)
+	}
+	
+	get_url <- session_data$base_url
+	get_url$path <- paste0(get_url$path, "get/results")
+	
+	# Create the Authorization header
+	auth_header <- httr::add_headers(Authorization = paste("Bearer", session_data$token))
+	
+	# Make the GET request with the header
+	result <- httr::GET(get_url, query = request, auth_header)
+	
+	res <- httr::content(result)
 	res
 }
 
@@ -101,7 +116,7 @@ formr_api_results = function(request = NULL, token = NULL) {
 #' @examples
 #' \dontrun{
 #' # First, authenticate
-#' formr_api_access_token(client_id = 'your_id', client_secret = 'your_secret')
+#' formr_api_authenticate(client_id = 'your_id', client_secret = 'your_secret')
 #' 
 #' # --- Example 1: Get all data from the 'widgets' run ---
 #' all_data <- formr_get_results(run_name = "widgets")
@@ -281,11 +296,12 @@ formr_api_authenticate <- function(client_id = NULL, client_secret = NULL,
 	}
 	
 	# Use access token if available
-	if (nzchar(access_token)) {
+	if (!is.null(access_token) && nzchar(access_token)) {
 		message("Authenticating using access_token.")
 		base_url <- httr::parse_url(host)
-		base_url$query <- list(access_token = access_token)
-		.formr_current_session$set(base_url)
+		# Store base_url and token separately in the session
+		session_data <- list(base_url = base_url, token = access_token)
+		.formr_current_session$set(session_data)
 		return(invisible(TRUE))
 	}
 	
