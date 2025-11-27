@@ -441,14 +441,44 @@ formr_label_missings <- function(results, item_displays, tag_missings = TRUE) {
 #' }
 
 formr_raw_results = function(survey_name, host = formr_last_host()) {
-  resp = httr::GET(paste0(host, "/admin/survey/", survey_name, 
-    "/export_results?format=json"))
-  if (resp$status_code == 200)
-    results = jsonlite::fromJSON(httr::content(resp, encoding = "utf8", 
-      as = "text")) else stop("This survey does not exist or isn't yours.")
-  
-  results
+	url = paste0(host, "/admin/survey/", survey_name, "/export_results?format=json")
+	resp = httr::GET(url, httr::config(followlocation = FALSE))
+	
+	content_type = httr::headers(resp)$`content-type`
+	is_json = !is.null(content_type) && grepl("application/json", content_type, fixed = TRUE)
+	
+	# Handle redirects (typically to login)
+	if (resp$status_code %in% c(301, 302, 303, 307, 308)) {
+		location = httr::headers(resp)$location
+		if (!is.null(location) && grepl("login", location, ignore.case = TRUE)) {
+			stop("Not logged in (redirected to login page)", call. = FALSE)
+		}
+		else if (!is.null(location) && grepl("show_itemdisplay", location, ignore.case = TRUE)) {
+			stop("No data yet.", call. = FALSE)
+		}
+	}
+	
+	if (resp$status_code == 200 && is_json) {
+		return(jsonlite::fromJSON(httr::content(resp, encoding = "utf8", as = "text")))
+	}
+	
+	# Non-200 or wrong content type
+	if (resp$status_code == 200 && !is_json) {
+		stop("Got 200 but response is not JSON (possibly redirected to login or error page)", 
+				 call. = FALSE)
+	}
+	
+	status_info = switch(as.character(resp$status_code),
+											 "401" = "Authentication required",
+											 "403" = "Access forbidden (survey may not be yours)",
+											 "404" = "Survey not found",
+											 "500" = "Server error",
+											 paste("HTTP", resp$status_code)
+	)
+	
+	stop(paste0("Failed to fetch survey '", survey_name, "': ", status_info), call. = FALSE)
 }
+
 
 #' Download items from formr
 #'
