@@ -4,3 +4,9 @@
 .credentials.R
 graph_run
 .lintr
+node_modules
+package-lock.json
+package.json
+formr-R-package-codebase.xml
+.repomixignore
+repomix.config.json
