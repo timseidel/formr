@@ -1,238 +1,314 @@
-# Action: Move all pure-R functions that handle data transformation, scoring, and type conversion here. These functions do not make HTTP requests.
-# 
-# formr_recognise (Crucial: Types data columns based on item metadata)
-# formr_post_process_results (The main "do everything" wrapper)
-# formr_label_missings (Handles tagging NAs)
-# formr_aggregate (Calculates scales/scores)
-# formr_reverse (Reverses item scores)
-# formr_simulate_from_items (Generates dummy data)
-
-#' @importFrom dplyr "%>%"
+#' @importFrom dplyr "%>%" select mutate arrange filter
+#' @importFrom tibble as_tibble
+#' @importFrom stringr str_detect str_match
+#' @importFrom haven labelled tagged_na
+#' @importFrom rlang .data
 NULL
 
-#' Recognise data types based on item table
-#'
-#' Converts logical types, dates, and factors based on formr item metadata.
-#'
-#' @param survey_name Optional name (for backwards compatibility/warnings).
-#' @param item_list An item_list object.
-#' @param results The data frame of results.
+#' Recognise data types based on survey metadata
+#' 
+#' Applies type conversion (factors, dates, numbers) and attributes (labels) 
+#' to the results table based on the survey structure.
+#' 
+#' @param item_list Metadata tibble from `formr_survey_structure()`.
+#' @param results Results tibble from `formr_results()`.
+#' @return The processed results tibble with correct types and attributes.
 #' @export
-formr_recognise = function(item_list, results, survey_name = NULL) {
+formr_recognise <- function(item_list, results) {
+	if (nrow(results) == 0) return(results)
 	
-	# Standard timestamps
-	for(col in c("created", "modified", "ended")) {
-		if(exists(col, where = results)) {
-			results[[col]] = as.POSIXct(results[[col]])
-			attributes(results[[col]])$label = paste("user", col, "survey")
+	# Timestamp conversion
+	time_cols <- intersect(names(results), c("created", "modified", "ended"))
+	for(col in time_cols) {
+		if(!inherits(results[[col]], "POSIXct")) {
+			results[[col]] <- as.POSIXct(results[[col]])
 		}
+		attr(results[[col]], "label") <- paste("timestamp:", col)
 	}
 	
-	if (is.null(item_list)) {
-		warning("No item list provided, using type.convert fallback.")
-		char_vars = sapply(results, is.character)
-		if (any(char_vars)) {
-			results[, char_vars] = dplyr::mutate_all(results[, char_vars, drop = FALSE], 
-																							 dplyr::funs(utils::type.convert(., as.is = TRUE)))
-		}
-		return(results)
-	}
+	if (is.null(item_list) || nrow(item_list) == 0) return(results)
 	
-	# Map items to columns
-	items_with_data = names(results)
+	# Filter metadata to items actually in the results
+	items_to_process <- item_list[item_list$name %in% names(results), ]
 	
-	for (i in seq_along(item_list)) {
-		item = item_list[[i]]
-		if (!item$name %in% items_with_data) next
+	# Loop safety: use row index
+	for (i in seq_len(nrow(items_to_process))) {
+		# Extract row as list to safely handle list-columns like 'choices'
+		item <- as.list(items_to_process[i, ])
 		
-		# 1. Choice/Factor Items
-		if (length(item$choices)) {
-			# First ensure it's not a weird string
-			results[[item$name]] = utils::type.convert(as.character(results[[item$name]]), as.is = TRUE)
+		name <- item$name
+		type <- item$type
+		label <- if(!is.null(item$label)) item$label else ""
+		
+		# Robust choice extraction (handles list-column nesting from tibble)
+		choices <- NULL
+		if (!is.null(item$choices)) {
+			if (is.list(item$choices)) choices <- item$choices[[1]] # It's nested in the cell
+			else choices <- item$choices
+		}
+		
+		# A. Choice Items
+		if (!is.null(choices) && length(choices) > 0) {
+			val <- results[[name]]
 			
-			# Handle logicals/integers that can't take tagged NAs
-			if (all(is.na(results[[item$name]])) || is.integer(results[[item$name]])) {
-				results[[item$name]] = as.numeric(results[[item$name]])
+			choice_labels <- names(choices)
+			choice_values <- unlist(choices)
+			
+			if (is.null(choice_labels)) {
+				choice_labels <- choice_values
+				choice_values <- seq_along(choice_values)
+			}
+			
+			# Convert to numeric if possible
+			num_values <- suppressWarnings(as.numeric(choice_values))
+			if (!any(is.na(num_values))) {
+				choice_values <- num_values
+				results[[name]] <- suppressWarnings(as.numeric(val))
 			}
 			
 			# Create labelled vector
-			choice_values = as_same_type_as(results[[item$name]], names(item$choices))
-			choice_labels = item$choices
-			names(choice_values) = choice_labels
-			
-			# Safety check
-			if(class(choice_values) == class(results[[item$name]])) {
-				results[[item$name]] = haven::labelled(results[[item$name]], choice_values)
-			}
-		} 
-		# 2. Text/Date/Number Items
-		else if (item$type %in% c("text", "textarea", "email", "letters")) {
-			results[[item$name]] = as.character(results[[item$name]])
-		} else if (item$type == "datetime") {
-			results[[item$name]] = as.POSIXct(results[[item$name]])
-		} else if (item$type == "date") {
-			results[[item$name]] = as.Date(results[[item$name]], format = "%Y-%m-%d")
-		} else if (item$type %in% c("number", "range", "range_list")) {
-			results[[item$name]] = as.numeric(results[[item$name]])
+			labels_vec <- stats::setNames(choice_values, choice_labels)
+			try({
+				results[[name]] <- haven::labelled(results[[name]], labels_vec)
+			}, silent = TRUE)
+		}
+		# B. Explicit Types
+		else if (type %in% c("text", "textarea", "email")) {
+			results[[name]] <- as.character(results[[name]])
+		} else if (type %in% c("date", "datetime")) {
+			# Robust date parsing
+			results[[name]] <- tryCatch(as.POSIXct(results[[name]]), error = function(e) results[[name]])
+		} else if (type %in% c("number", "range", "calculate")) {
+			results[[name]] <- suppressWarnings(as.numeric(results[[name]]))
 		}
 		
-		# Metadata
-		attributes(results[[item$name]])$label = item$label
-		attributes(results[[item$name]])$item = item
+		attr(results[[name]], "label") <- label
+		attr(results[[name]], "item_meta") <- item
 	}
 	
 	results
 }
 
-#' Processed, aggregated results wrapper
+#' Process Results Wrapper
 #' 
-#' Chains recognise, aggregate, and missing-labelling.
+#' The master pipeline for cleaning data.
+#' Steps:
+#' 1. Filter test sessions (optional).
+#' 2. Apply types/attributes (`formr_recognise`).
+#' 3. Reverse scored items (`formr_reverse`).
+#' 4. Calculate scale means (`formr_aggregate`).
+#' 5. Label missing values (optional).
 #' 
-#' @param item_list An item list.
-#' @param results Raw results data frame.
-#' @param compute_alphas Deprecated.
-#' @param fallback_max Passed to formr_reverse.
-#' @param plot_likert Deprecated.
-#' @param quiet Passed to formr_aggregate.
-#' @param item_displays Display table for missing value tagging.
-#' @param tag_missings Logical.
-#' @param remove_test_sessions Filter out sessions with 'XXX'.
+#' @param item_list Metadata tibble.
+#' @param results Results tibble.
+#' @param item_displays Optional display log tibble.
+#' @param remove_test_sessions Filter out sessions with "XXX".
+#' @param tag_missings Tag NAs if display data is present.
+#' @param fallback_max Max value for Likert reversal (default 5).
 #' @export
-formr_post_process_results = function(item_list = NULL, results, 
-																			compute_alphas = FALSE, fallback_max = 5, 
-																			plot_likert = FALSE, quiet = FALSE, 
-																			item_displays = NULL, tag_missings = !is.null(item_displays), 
-																			remove_test_sessions = TRUE) {
+formr_post_process_results <- function(item_list, results, 
+																			 item_displays = NULL,
+																			 remove_test_sessions = TRUE,
+																			 tag_missings = !is.null(item_displays),
+																			 fallback_max = 5) {
 	
 	# 1. Filter Test Sessions
-	if (remove_test_sessions) {
-		if (exists("session", results)) {
-			sessions_before <- unique(results$session[!is.na(results$session)])
-			results = results[!is.na(results$session) & !stringr::str_detect(results$session, "XXX"), ]
-			
-			if (!is.null(item_displays) && exists("session", item_displays)) {
-				item_displays = item_displays[!is.na(item_displays$session) & !stringr::str_detect(item_displays$session, "XXX"), ]
-			}
-		} else {
-			warning("Cannot remove test sessions (missing 'session' column).")
+	if (remove_test_sessions && "session" %in% names(results)) {
+		results <- results[!grepl("XXX", results$session), ]
+		
+		if (!is.null(item_displays) && "session" %in% names(item_displays)) {
+			item_displays <- item_displays[!grepl("XXX", item_displays$session), ]
 		}
 	}
 	
-	# 2. Process
-	results = formr_recognise(item_list = item_list, results = results)
-	results = formr_aggregate(survey_name = NULL, item_list = item_list, results = results, 
-														compute_alphas = compute_alphas, fallback_max = fallback_max, 
-														plot_likert = plot_likert, quiet = quiet)
+	# 2. Type Recognition
+	results <- formr_recognise(item_list, results)
 	
-	results <- formr_label_missings(results, item_displays, tag_missings = tag_missings)
+	# 3. Reverse Items
+	results <- formr_reverse(results, item_list, fallback_max)
 	
-	results
-}
-
-#' Tag missing values
-#' 
-#' Uses item_displays to distinguish between skipped, hidden, and not-reached items.
-#' @export
-formr_label_missings <- function(results, item_displays, tag_missings = TRUE) {
-	if (tag_missings & !is.null(item_displays)) {
-		missing_labels = c("Missing for unknown reason" = haven::tagged_na("o"), 
-											 "Item was not shown to this user." = haven::tagged_na("h"), 
-											 "User skipped this item." = haven::tagged_na("i"),
-											 "Item was never rendered for this user." = haven::tagged_na("s"),
-											 "Weird missing." = haven::tagged_na("w"))
-		
-		# Create map of missing statuses
-		missing_map <- item_displays %>% 
-			dplyr::mutate(hidden = dplyr::if_else(.data$hidden == 1, 1, 
-																						dplyr::if_else(is.na(.data$shown), -1, 0), -1)) %>% 
-			dplyr::select("item_name", "hidden", "unit_session_id", "session") %>% 
-			dplyr::filter(!duplicated(cbind(.data$session, .data$unit_session_id, .data$item_name))) %>% 
-			tidyr::spread("item_name", "hidden", fill = -2) %>% 
-			dplyr::arrange("session", "unit_session_id")
-		
-		results_with_attrs <- results
-		results <- results %>% dplyr::arrange("session", "created")
-		
-		# Apply tags
-		for (var in names(results)) {
-			if (var %in% names(missing_map) && (is.numeric(results[[var]]) || is.factor(results[[var]]))) {
-				# Only tag NAs
-				na_idx <- is.na(results[[var]])
-				if(any(na_idx)) {
-					# Apply logic mapping hidden status to tagged NA char
-					# (Logic simplified for brevity, refer to original for full map)
-					results[[var]][na_idx] = haven::tagged_na("o")
-				}
-			}
-		}
-		results <- rescue_attributes(results, results_with_attrs)
+	# 4. Aggregate Scales
+	results <- formr_aggregate(results, item_list)
+	
+	# 5. Label Missings
+	if (tag_missings && !is.null(item_displays)) {
+		results <- formr_label_missings(results, item_displays)
 	}
+	
 	results
 }
 
 #' Reverse Items
+#' 
+#' Reverses items ending in 'R' (e.g. `extra_1R`). 
+#' Uses metadata to find max value, or falls back to `fallback_max`.
+#' 
+#' @param results Results tibble.
+#' @param item_list Metadata tibble.
+#' @param fallback_max Default max for reversal if unknown (default 5).
 #' @export
-formr_reverse = function(results, item_list = NULL, fallback_max = 5) {
-	item_names = names(results)
+formr_reverse <- function(results, item_list = NULL, fallback_max = 5) {
 	
-	# A. No Item List (Heuristic based on name ending in R)
-	if (is.null(item_list)) {
-		reversed_items = item_names[stringr::str_detect(item_names, "^(?i)[a-zA-Z0-9_]+?[0-9]+R$")]
-		for (var in reversed_items) {
-			if(is.numeric(results[[var]])) {
-				item_max <- max(results[[var]], fallback_max, na.rm = TRUE)
-				results[[var]] <- item_max + 1 - results[[var]]
-				warning(paste(var, "reversed in place (heuristic)."))
+	item_names <- names(results)
+	# Detect items ending in number + R (e.g. "bfi_10R", "scale2R")
+	reversed_vars <- item_names[stringr::str_detect(item_names, "(?i)[a-z0-9_]+?[0-9]+R$")]
+	
+	for (var in reversed_vars) {
+		# Skip if not numeric/labelled
+		if(!is.numeric(results[[var]]) && !inherits(results[[var]], "haven_labelled")) next
+		
+		# 1. Determine Max
+		item_max <- fallback_max
+		
+		# Try to get max from metadata choices
+		if(!is.null(item_list)) {
+			meta <- item_list[item_list$name == var, ]
+			if(nrow(meta) > 0 && !is.null(meta$choices[[1]])) {
+				# Check explicit choices
+				choices <- unlist(meta$choices[[1]])
+				vals <- suppressWarnings(as.numeric(choices))
+				if(!all(is.na(vals))) item_max <- max(vals, na.rm = TRUE)
 			}
 		}
-	} 
-	# B. With Item List (Safer)
-	else {
-		for (item in item_list) {
-			if (item$name %in% item_names && length(item$choices) && stringr::str_detect(item$name, "(?i)^([a-z0-9_]+?)[0-9]+R$")) {
-				if(is.numeric(results[[item$name]]) || haven::is.labelled(results[[item$name]])) {
-					results[[item$name]] = reverse_labelled_values(results[[item$name]])
-				}
-			}
+		
+		# Heuristic update: if data > max, bump max
+		current_vals <- as.numeric(results[[var]])
+		current_max <- max(current_vals, na.rm = TRUE)
+		if (is.finite(current_max) && current_max > item_max) {
+			item_max <- current_max
 		}
+		
+		# 2. Perform Reversal: (Max + Min) - Value
+		# Assumes Min=1. 
+		# Formula: new = (Max + 1) - old
+		results[[var]] <- (item_max + 1) - as.numeric(results[[var]])
+		
+		attr(results[[var]], "reversed") <- TRUE
+		attr(results[[var]], "reversal_max") <- item_max
 	}
+	
 	results
 }
 
 #' Aggregate Scales
+#' 
+#' Calculates row means for items sharing a common stem.
+#' E.g. `bfi_n_1`, `bfi_n_2` -> `bfi_n`.
+#' 
+#' @param results Results tibble.
+#' @param item_list Metadata tibble (optional, for checking types).
+#' @param min_items Minimum items required to form a scale (default 2).
 #' @export
-formr_aggregate = function(survey_name = NULL, item_list = NULL, results, 
-													 compute_alphas = FALSE, fallback_max = 5, 
-													 plot_likert = FALSE, quiet = FALSE, aggregation_function = rowMeans, ...) {
+formr_aggregate <- function(results, item_list = NULL, min_items = 2) {
 	
-	results = formr_reverse(results, item_list, fallback_max = fallback_max)
+	item_names <- names(results)
+	# Regex for stems (e.g. bfi_1 -> bfi)
+	stems <- stringr::str_match(item_names, "^([a-zA-Z0-9_]+?)[_]?\\d+[R]?$")[, 2]
+	unique_stems <- unique(stats::na.omit(stems))
 	
-	# Find scales based on naming convention (stem_1, stem_2, etc)
-	item_names = names(results)
-	scale_stubs = stringr::str_match(item_names, "(?i)^([a-z0-9_]+?)_?[0-9]+R?$")[, 2]
-	scales = unique(stats::na.omit(scale_stubs[duplicated(scale_stubs)]))
-	
-	for (scale in scales) {
-		if (exists(scale, where = results)) next # Already exists
+	for (scale in unique_stems) {
+		if (scale %in% names(results)) next 
 		
-		scale_items = item_names[which(scale_stubs == scale)]
+		pattern <- paste0("^", scale, "[_]?\\d+[R]?$")
+		scale_cols <- item_names[stringr::str_detect(item_names, pattern)]
 		
-		# Check if all items are numeric
-		if (all(sapply(results[, scale_items], is.numeric))) {
-			results[, scale] = aggregate_and_document_scale(results[, scale_items], fun = aggregation_function)
+		if (length(scale_cols) < min_items) next
+		
+		# CRITICAL FIX: Ensure we only aggregate NUMERIC data
+		# If it's a Factor, stop. Factors convert to 1,2,3 integers which ruins Likert scales (0,1,2,3)
+		safe_cols <- vapply(results[scale_cols], function(x) {
+			is.numeric(x) || inherits(x, "haven_labelled")
+		}, logical(1))
+		
+		if (all(safe_cols)) {
+			message(sprintf("ℹ Aggregating '%s' (%d items)", scale, length(scale_cols)))
+			
+			# Strip haven labels for math
+			mat <- as.matrix(sapply(results[scale_cols], as.numeric))
+			results[[scale]] <- rowMeans(mat, na.rm = TRUE)
+			
+			attr(results[[scale]], "scale_items") <- scale_cols
+			attr(results[[scale]], "label") <- paste(length(scale_cols), "items aggregated (mean)")
+		} else {
+			# Warn if we skipped because of types
+			warning(sprintf("Skipped aggregating '%s': Some items are not numeric/labelled.", scale))
 		}
 	}
+	results
+}
+
+#' Tag Missing Values
+#' !!Currently disabled!!
+#' Uses `item_displays` log to distinguish between:
+#' - **Shown but skipped** (User saw it, didn't answer)
+#' - **Hidden** (Logic skipped it)
+#' - **Not Reached** (User quit before this page)
+#' 
+#' @param results Results tibble.
+#' @param item_displays Display log tibble.
+#' @export
+formr_label_missings <- function(results, item_displays) {
+	# Requires `haven` for tagged NAs
+	if (is.null(item_displays) || nrow(item_displays) == 0) return(results)
 	
-	if(compute_alphas || plot_likert) warning("Alpha/Plot functionality moved to 'codebook' package.")
+	# TODO: Re-implement robust mapping when `item_displays` structure is confirmed via API V1.
+	# The legacy logic relied on specific column names ('shown', 'hidden') that might change.
 	
 	results
 }
 
-#' Simulate Data
+#' Simulate Data from Metadata
+#' 
+#' Generates dummy data based on item types and choices.
+#' 
+#' @param item_list Metadata tibble.
+#' @param n Number of participants to simulate.
 #' @export
-formr_simulate_from_items = function(item_list, n = 300) {
-	sim = data.frame(id = 1:n)
-	# Basic simulation logic...
-	# (Copy logic from original file here)
-	return(sim)
+formr_simulate_from_items <- function(item_list, n = 100) {
+	
+	# Create skeleton
+	df <- tibble::tibble(session = paste0("dummy_", 1:n))
+	
+	for (i in seq_len(nrow(item_list))) {
+		item <- item_list[i, ]
+		name <- item$name
+		type <- item$type
+		choices <- if(!is.null(item$choices)) item$choices[[1]] else NULL
+		
+		val <- rep(NA, n)
+		
+		# Simulation Logic
+		if (!is.null(choices)) {
+			# Sample from choice keys
+			keys <- names(choices)
+			if(is.null(keys)) keys <- seq_along(choices) # Implicit keys
+			
+			# Prefer numeric if keys look numeric
+			num_keys <- suppressWarnings(as.numeric(keys))
+			if(!any(is.na(num_keys))) keys <- num_keys
+			
+			val <- sample(keys, n, replace = TRUE)
+			
+		} else if (type == "number") {
+			val <- round(runif(n, 0, 100), 1)
+		} else if (type == "range") {
+			val <- sample(1:100, n, replace = TRUE)
+		} else if (type %in% c("text", "textarea")) {
+			val <- paste("Text for", name, 1:n)
+		} else if (type == "email") {
+			val <- paste0("user", 1:n, "@test.com")
+		} else if (type %in% c("date", "datetime")) {
+			val <- Sys.time() - runif(n, 0, 86400 * 30)
+		}
+		
+		if (type %in% c("note", "submit", "calculate")) next
+		
+		df[[name]] <- val
+	}
+	
+	# Fake metadata
+	df$created <- Sys.time() - runif(n, 0, 10000)
+	df$ended <- df$created + runif(n, 60, 600)
+	
+	df
 }

@@ -118,36 +118,31 @@ formr_run_settings <- function(run_name, settings = NULL) {
 #' a JSON file (PUT).
 #' 
 #' @param run_name Name of the run.
-#' @param structure_json_path Optional path to a JSON file to IMPORT structure. 
-#'   If NULL, EXPORTS current structure.
+#' @param structure_json_path Optional path to a JSON file to IMPORT (PUT) structure. 
+#'   If provided, the function uploads this file to the server.
+#' @param file Optional path to save the DOWNLOADED (GET) structure as a .json file.
+#'   This ensures a perfect 1:1 backup of the server configuration.
 #' @return 
-#'   - GET: A list containing the run structure.
+#'   - GET (default): A `formr_run_structure` object (list) for inspection.
+#'   - GET (file provided): Invisibly returns the file path.
 #'   - PUT: Invisibly returns TRUE on success.
 #' @export
-formr_run_structure <- function(run_name, structure_json_path = NULL) {
+formr_run_structure <- function(run_name, structure_json_path = NULL, file = NULL) {
 	
-	if (is.null(structure_json_path)) {
-		# --- GET Mode: Export Structure ---
-		return(formr_api_request(
-			endpoint = paste0("runs/", run_name, "/structure"), 
-			method = "GET"
-		))
-		
-	} else {
-		# --- PUT Mode: Import Structure ---
-		
+	# --- PUT Mode: Import/Upload Structure ---
+	if (!is.null(structure_json_path)) {
 		if (!file.exists(structure_json_path)) {
 			stop("File not found: ", structure_json_path)
 		}
 		
-		# 1. Read and Validate JSON locally
+		# Read and Validate JSON locally
 		json_content <- paste(readLines(structure_json_path, warn = FALSE), collapse = "\n")
 		
 		if (!jsonlite::validate(json_content)) {
 			stop("The provided file contains invalid JSON. Please check syntax.")
 		}
 		
-		# 2. Send PUT Request with encode="raw"
+		# Send PUT Request
 		res <- formr_api_request(
 			endpoint = paste0("runs/", run_name, "/structure"),
 			method = "PUT",
@@ -155,13 +150,106 @@ formr_run_structure <- function(run_name, structure_json_path = NULL) {
 			encode = "raw"
 		)
 		
-		# 3. Success Feedback
-		success_msg <- "Structure imported successfully."
-		if (is.list(res) && !is.null(res$statusText)) {
-			success_msg <- res$statusText
-		}
-		
-		message(sprintf("✅ %s", success_msg))
+		message("✅ Structure imported successfully.")
 		return(invisible(TRUE))
 	}
+	
+	# --- GET Mode: Export/Download Structure ---
+	
+	# Option A: User wants to save to file (Backup)
+	# We fetch RAW text to ensure 1:1 fidelity (avoiding R list <-> JSON conversion artifacts)
+	if (!is.null(file)) {
+		session <- formr_api_session()
+		url <- session$base_url
+		url$path <- paste0(url$path, "/v1/runs/", run_name, "/structure")
+		
+		# Manual request to get raw text
+		response <- httr::GET(
+			url, 
+			httr::add_headers(Authorization = paste("Bearer", session$token))
+		)
+		httr::stop_for_status(response)
+		
+		# Write raw content directly to file
+		writeBin(httr::content(response, "raw"), file)
+		message(sprintf("✅ Backup saved to: %s", file))
+		return(invisible(file))
+	}
+	
+	# Option B: User wants to inspect in R (Interactive)
+	res <- formr_api_request(
+		endpoint = paste0("runs/", run_name, "/structure"), 
+		method = "GET"
+	)
+	
+	# Add S3 class for pretty printing
+	class(res) <- c("formr_run_structure", class(res))
+	return(res)
+}
+
+#' Print method for formr run structure
+#' @export
+print.formr_run_structure <- function(x, ...) {
+	cat(sprintf("🏃 Run Structure: %s\n", x$name))
+	cat(sprintf("   (Total Units: %d)\n\n", length(x$units)))
+	
+	if (length(x$units) == 0) {
+		cat("   [Empty Run]\n")
+		return(invisible(x))
+	}
+	
+	df <- as.data.frame(x)
+	
+	# Dynamic column width
+	w_pos <- max(nchar(as.character(df$position)), 3)
+	w_type <- max(nchar(as.character(df$type)), 4)
+	
+	# Header
+	cat(sprintf(paste0("%-", w_pos, "s | %-", w_type, "s | %s\n"), "Pos", "Type", "Details"))
+	cat(paste(rep("-", w_pos + w_type + 20), collapse = ""), "\n")
+	
+	# Rows
+	for(i in 1:nrow(df)) {
+		cat(sprintf(paste0("%0", w_pos, "d | %-", w_type, "s | %s\n"), 
+								df$position[i], 
+								df$type[i], 
+								df$details[i]))
+	}
+	invisible(x)
+}
+
+#' Convert formr run structure to data.frame
+#' @export
+as.data.frame.formr_run_structure <- function(x, ...) {
+	if (length(x$units) == 0) return(data.frame())
+	
+	do.call(rbind, lapply(x$units, function(u) {
+		details <- ""
+		
+		if (u$type == "Survey") {
+			n_items <- if(!is.null(u$survey_data$items)) length(u$survey_data$items) else 0
+			details <- sprintf("%s (%d items)", u$survey_data$name, n_items)
+		} else if (u$type %in% c("SkipForward", "SkipBackward")) {
+			target <- if(!is.null(u$if_true)) u$if_true else "End"
+			details <- sprintf("Jump to Pos %s", target)
+		} else if (u$type == "Email") {
+			details <- sprintf("Subject: %s", u$subject)
+		} else if (u$type == "Pause") {
+			details <- sprintf("Wait: %s", u$wait_minutes)
+		} else if (u$type == "Endpage") {
+			body_preview <- substr(u$body, 1, 30)
+			if(nchar(u$body) > 30) body_preview <- paste0(body_preview, "...")
+			details <- body_preview
+		}
+		
+		data.frame(
+			position = as.integer(u$position),
+			type = u$type,
+			description = if(is.null(u$description)) "" else u$description,
+			details = details,
+			stringsAsFactors = FALSE
+		)
+	})) -> df
+	
+	df[order(df$position), ]
 }

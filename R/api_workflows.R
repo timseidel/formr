@@ -1,179 +1,251 @@
-# Action: The "Backup" functions are valuable high-level workflows. 
-# They currently use legacy code. We should rewrite them to use your new 
-# V1 functions and place them here.
-# 
-# formr_backup_study -> Rewrite to use formr_run_structure, formr_results, etc.
-# formr_backup_surveys -> Rewrite to use formr_items, formr_results.
-# formr_backup_files -> Rewrite to use formr_uploaded_files.
-
 #' Backup a study
 #'
-#' Backup a study by downloading all surveys, results, item displays, run shuffle, user overview and user details. This function will save the data in a folder named after the study.
+#' Downloads the full run structure, all survey items, and results.
+#' Saves everything into a structured folder.
 #'
-#' @param study_name case-sensitive name of a study your account owns
-#' @param save_path path to save the study data, defaults to the study name
-#' @param host defaults to [formr_last_host()], which defaults to https://formr.org
-#' @param overwrite should existing files be overwritten?
+#' @param study_name Name of the run/study.
+#' @param save_path Local folder to save data (defaults to study_name).
+#' @param overwrite Logical. Overwrite existing files?
 #' @export
-#' @examples
-#' \dontrun{
-#' formr_backup_study(study_name = 'training_diary' )
-#' }
-formr_backup_study = function(study_name, save_path = study_name, host = formr_last_host(), overwrite = FALSE) {
-  run_structure = formr_run_structure(study_name, host)
-
-  if(file.exists(save_path) && !overwrite) {
-    stop("Save path already exists. Set overwrite = TRUE to overwrite.")
-  }
-  # create a folder for the study
-  dir.create(save_path, showWarnings = FALSE)
-  # save JSON copy of run structure
-  jsonlite::write_json(run_structure, 
-                        path = paste0(save_path, "/run_structure.json"), 
-                        pretty = TRUE)
-
-  # Loop through run structure to find all surveys
-  surveys = list()
-  for (unit in run_structure$units) {
-    if (unit$type == "Survey") {
-      surveys[[unit$survey_data$name]] = unit
-    }
-  }
-
-  survey_names = names(surveys)
-
-  formr_backup_surveys(survey_names, surveys, save_path, overwrite, host)
-
-  # Download run shuffle, if exists
-  if ("shuffle" %in% names(run_structure)) {
-    shuffle = formr_shuffled(study_name, host)
-    jsonlite::write_json(shuffle, 
-                         path = paste0(save_path, "/run_shuffle.json"), 
-                         pretty = TRUE)
-  }
-
-  # Download run user overview
-  user_overview = formr_user_overview(study_name, host)
-  jsonlite::write_json(user_overview, 
-                        path = paste0(save_path, "/run_user_overview.json"), 
-                        pretty = TRUE)
-
-  # Download run user details
-  user_detail = formr_user_detail(study_name, host)
-  jsonlite::write_json(user_detail, 
-                        path = paste0(save_path, "/run_user_detail.json"), 
-                        pretty = TRUE)
-
+formr_backup_study <- function(study_name, save_path = study_name, overwrite = FALSE) {
+	
+	if (dir.exists(save_path) && !overwrite) {
+		stop(sprintf("Directory '%s' already exists. Set overwrite = TRUE to proceed.", save_path))
+	}
+	dir.create(save_path, showWarnings = FALSE, recursive = TRUE)
+	
+	message(sprintf("📦 Backing up study '%s' to '%s'...", study_name, save_path))
+	
+	# 1. Run Structure (JSON)
+	tryCatch({
+		formr_run_structure(study_name, file = file.path(save_path, "run_structure.json"))
+	}, error = function(e) warning("Failed to download run structure: ", e$message))
+	
+	# 2. Surveys (Items as JSON/CSV)
+	# We extract survey names from the structure to know what to fetch
+	structure <- formr_run_structure(study_name)
+	survey_units <- Filter(function(u) u$type == "Survey", structure$units)
+	
+	if (length(survey_units) > 0) {
+		survey_names <- unique(sapply(survey_units, function(u) u$survey_data$name))
+		formr_backup_surveys(survey_names, save_path = file.path(save_path, "surveys"))
+	}
+	
+	# 3. Results (RDS/CSV)
+	message("⬇️  Downloading results...")
+	results <- formr_results(study_name)
+	saveRDS(results, file = file.path(save_path, "results.rds"))
+	
+	# 4. Files
+	message("⬇️  Downloading attached files...")
+	formr_backup_files(study_name, save_path = file.path(save_path, "files"), overwrite = overwrite)
+	
+	message("✅ Backup complete.")
 }
 
-#' Download random groups
-#'
-#' formr has a specific module for randomisation.
-#' After connecting using [formr_connect()]
-#' you can download the assigned random groups and merge them with your data.
-#'
-#' @param run_name case-sensitive name of the run in which you randomised participants
-#' @param host defaults to [formr_last_host()], which defaults to https://formr.org
+#' Backup Surveys
+#' 
+#' Downloads item tables for a list of surveys.
+#' 
+#' @param survey_names Vector of survey names.
+#' @param save_path Directory to save files.
 #' @export
-#' @examples
-#' \dontrun{
-#' formr_connect(email = 'you@@example.net', password = 'zebrafinch' )
-#' formr_shuffled(run_name = 'different_drills' )
-#' }
-
-formr_shuffled = function(run_name, host = formr_last_host()) {
-	resp = httr::GET(paste0(host, "/admin/run/", run_name, "/random_groups_export?format=json"))
-	if (resp$status_code == 200) 
-		jsonlite::fromJSON(httr::content(resp, encoding = "utf8", 
-																		 as = "text")) else stop("This run does not exist.")
+formr_backup_surveys <- function(survey_names, save_path = "surveys") {
+	dir.create(save_path, showWarnings = FALSE, recursive = TRUE)
+	
+	for (name in survey_names) {
+		message(sprintf("   - Survey: %s", name))
+		try({
+			items <- formr_survey_structure(name)
+			# Save as RDS (preserves types/nested lists) and CSV (readable backup)
+			saveRDS(items, file.path(save_path, paste0(name, "_items.rds")))
+			
+			# Flatten for CSV if possible, otherwise just skip
+			try(readr::write_csv(items, file.path(save_path, paste0(name, "_items.csv"))), silent = TRUE)
+		})
+	}
 }
 
-#' Download random groups
-#'
-#' formr collects information about users' progression through the run
-#' After connecting using [formr_connect()]
-#' you can download a table showing where they are in the run.
-#'
-#' @param run_name case-sensitive name of the run in which you randomised participants
-#' @param host defaults to [formr_last_host()], which defaults to https://formr.org
+#' Backup uploaded files
+#' 
+#' Downloads all files attached to a run.
+#' 
+#' @param run_name Name of the run.
+#' @param save_path Local directory.
+#' @param overwrite Overwrite existing files?
 #' @export
-#' @examples
-#' \dontrun{
-#' formr_connect(email = 'you@@example.net', password = 'zebrafinch' )
-#' formr_user_overview(run_name = 'different_drills' )
-#' }
-
-formr_user_overview = function(run_name, host = formr_last_host()) {
-	resp = httr::GET(paste0(host, "/admin/run/", run_name, "/export_user_overview?format=json"))
-	if (resp$status_code == 200) 
-		jsonlite::fromJSON(httr::content(resp, encoding = "utf8", 
-																		 as = "text")) else stop("This run does not exist.")
+formr_backup_files <- function(run_name, save_path = "files", overwrite = FALSE) {
+	dir.create(save_path, showWarnings = FALSE, recursive = TRUE)
+	
+	files <- formr_files(run_name)
+	
+	if (nrow(files) == 0) {
+		message("   (No files found)")
+		return(invisible(NULL))
+	}
+	
+	for (i in 1:nrow(files)) {
+		f <- files[i, ]
+		local_path <- file.path(save_path, f$name)
+		
+		if (file.exists(local_path) && !overwrite) {
+			next # Skip
+		}
+		
+		# Download using the public URL (if accessible) or API endpoint if needed
+		# Assuming `url` in file object is accessible
+		tryCatch({
+			utils::download.file(f$url, destfile = local_path, mode = "wb", quiet = TRUE)
+			message(sprintf("   - Downloaded: %s", f$name))
+		}, error = function(e) {
+			warning(sprintf("Failed to download '%s': %s", f$name, e$message))
+		})
+	}
 }
 
+#### WATCHER AND SYNCH FUNCTIONALITY
 
-#' Download random groups
-#'
-#' formr collects information about users' progression through the run
-#' After connecting using [formr_connect()]
-#' you can download a table showing their progression through the run.
-#'
-#' @param run_name case-sensitive name of the run in which you randomised participants
-#' @param host defaults to [formr_last_host()], which defaults to https://formr.org
+#' Synchronize a local folder with a run (Smart Sync)
+#' 
+#' Syncs local files to the server.
+#' - Uploads new files.
+#' - Deletes missing files.
+#' - UPDATES files if the local version is newer than the server version.
+#' 
+#' @param run_name Name of the run.
+#' @param folder_path Local directory to sync.
+#' @param tolerance Seconds of difference allowed before considering a file "changed" (default 2s).
+#' @param dry_run If TRUE, only prints changes without executing them.
 #' @export
-#' @examples
-#' \dontrun{
-#' formr_connect(email = 'you@@example.net', password = 'zebrafinch' )
-#' formr_user_detail(run_name = 'different_drills' )
-#' }
-
-formr_user_detail = function(run_name, host = formr_last_host()) {
-	resp = httr::GET(paste0(host, "/admin/run/", run_name, "/export_user_detail?format=json"))
-	if (resp$status_code == 200) 
-		jsonlite::fromJSON(httr::content(resp, encoding = "utf8", 
-																		 as = "text")) else stop("This run does not exist.")
-}
-
-
-#' Backup uploaded files from formr
-#'
-#' After connecting to formr using [formr_connect()]
-#' you can backup uploaded files using this command.
-#'
-#' @param survey_name case-sensitive name of a survey your account owns
-#' @param overwrite should existing files be overwritten? defaults to FALSE
-#' @param save_path defaults to the survey name
-#' @param host defaults to [formr_last_host()], which defaults to https://formr.org
-#' @export
-#' @examples
-#' \dontrun{
-#' formr_backup_files(survey_name = 'training_diary' )
-#' }
-
-formr_backup_files = function(survey_name, 
-															overwrite = FALSE, 
-															save_path = paste0(survey_name, "/user_uploaded_files"),
-															host = formr_last_host()) {
-	file_list = formr_uploaded_files(survey_name, host)
-	if(length(file_list) > 0) {
-		dir.create(save_path, showWarnings = FALSE)
-		message("Downloading ", length(file_list), " user-uploaded files...")
-		i = 0
-		for (file in file_list) {
-			i = i + 1
-			local_file_name = basename(file$stored_path)
-			local_file_name = paste0(save_path, "/", local_file_name)
-			resp = httr::GET(file$stored_path)
-			if (resp$status_code != 200) {
-				warning("Could not download file ", local_file_name)
-				file_list[[i]]$downloaded <- FALSE
-			} else {
-				if(overwrite | !file.exists(local_file_name)) {
-					raw_content <- httr::content(resp, as = "raw")
-					writeBin(raw_content, local_file_name)
-				}
-				file_list[[i]]$downloaded <- TRUE
+formr_sync_folder <- function(run_name, folder_path, tolerance = 2, dry_run = FALSE) {
+	
+	if (!dir.exists(folder_path)) stop("Local folder not found: ", folder_path)
+	
+	# --- 1. Get Server State ---
+	server_df <- formr_files(run_name)
+	
+	# Handle empty server state
+	if (nrow(server_df) == 0) {
+		server_map <- list()
+	} else {
+		# Create a named list for quick lookup: name -> modified_time
+		# We ensure server time is numeric (seconds since epoch) for easy comparison
+		server_map <- as.list(as.numeric(server_df$modified))
+		names(server_map) <- server_df$name
+	}
+	
+	# --- 2. Get Local State ---
+	local_files_full <- list.files(folder_path, recursive = FALSE, full.names = TRUE)
+	local_files_names <- basename(local_files_full)
+	
+	# Get modification times (mtime)
+	local_info <- file.info(local_files_full)
+	local_mtimes <- as.numeric(local_info$mtime)
+	names(local_mtimes) <- local_files_names
+	
+	# --- 3. Calculate Differences ---
+	
+	# A. Files to Delete (On server, but not local)
+	to_delete <- setdiff(names(server_map), local_files_names)
+	
+	# B. Files to Upload (New OR Modified)
+	to_upload <- c()
+	
+	for (f_name in local_files_names) {
+		is_new <- ! (f_name %in% names(server_map))
+		
+		if (is_new) {
+			# It's a new file
+			to_upload <- c(to_upload, f_name)
+		} else {
+			# It exists on both; check timestamps
+			server_time <- server_map[[f_name]]
+			local_time  <- local_mtimes[[f_name]]
+			
+			# Logic: If local file is significantly NEWER than server file
+			# (We use tolerance to ignore tiny clock skews)
+			if ((local_time - server_time) > tolerance) {
+				to_upload <- c(to_upload, f_name)
 			}
 		}
 	}
-	invisible(file_list)
+	
+	# --- 4. Execute / Report ---
+	
+	if (length(to_upload) == 0 && length(to_delete) == 0) {
+		return(invisible(FALSE)) # Silent return if nothing happened
+	}
+	
+	message(sprintf("--- Syncing '%s' ---", folder_path))
+	
+	if (dry_run) {
+		if (length(to_upload) > 0) cat("Dry Run [Upload/Update]:", paste(to_upload, collapse=", "), "\n")
+		if (length(to_delete) > 0) cat("Dry Run [Delete]:", paste(to_delete, collapse=", "), "\n")
+		return(invisible(TRUE))
+	}
+	
+	# Perform Deletions
+	if (length(to_delete) > 0) {
+		formr_delete_file(run_name, to_delete)
+	}
+	
+	# Perform Uploads (This handles both new files and overwrites)
+	if (length(to_upload) > 0) {
+		# Reconstruct full paths
+		paths_to_upload <- file.path(folder_path, to_upload)
+		formr_upload_file(run_name, paths_to_upload)
+	}
+	
+	invisible(TRUE)
+}
+
+#' Start a Folder Watcher
+#' 
+#' Continuously monitors a local folder and syncs changes to the formr run.
+#' ⚠ BLOCKING: This function runs an infinite loop. Press Esc to stop.
+#' 
+#' @param run_name Name of the run.
+#' @param folder_path Local directory to watch.
+#' @param interval Seconds to wait between checks.
+#' @export
+formr_start_watcher <- function(run_name, folder_path, interval = 5) {
+	message(sprintf("👀 Watching folder '%s' for run '%s'...", folder_path, run_name))
+	message("Press Esc to stop.")
+	
+	tryCatch({
+		while(TRUE) {
+			# Run the sync silently
+			formr_sync_folder(run_name, folder_path)
+			
+			# Wait before checking again
+			Sys.sleep(interval)
+		}
+	}, interrupt = function(i) {
+		message("\n🛑 Watcher stopped by user.")
+	})
+}
+
+
+#' Get Full Participants Table
+#' 
+#' Combines listing and inspection to give a full table of user states.
+#' 
+#' @param run_name Name of the run
+#' @param limit How many recent users to fetch (default 50)
+#' @return A detailed tibble of recent users
+formr_participants_table <- function(run_name, limit = 50) {
+	
+	# 1. Get the list (The Phonebook)
+	# Uses the lightweight formr_sessions logic
+	message("📋 Fetching participant list...")
+	list_df <- formr_sessions(run_name, limit = limit)
+	
+	if (nrow(list_df) == 0) return(list_df)
+	
+	# 2. Get the details for these specific codes (The Dossier)
+	# Uses your new vectorized formr_session_details
+	message(sprintf("🔍 Inspecting %d participants...", nrow(list_df)))
+	details_df <- formr_session_details(run_name, list_df$session)
+	
+	return(details_df)
 }

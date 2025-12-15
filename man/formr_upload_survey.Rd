@@ -2,17 +2,21 @@
 % Please edit documentation in R/api_surveys.R
 \name{formr_upload_survey}
 \alias{formr_upload_survey}
-\title{Upload or Update a Survey}
+\title{Upload/Update Survey}
 \usage{
-formr_upload_survey(name, path = NULL, google_sheet_url = NULL)
+formr_upload_survey(
+  file_path = NULL,
+  survey_name = NULL,
+  google_sheet_url = NULL
+)
 }
 \arguments{
-\item{name}{The name of the survey (in formr).}
+\item{file_path}{Path to a local file.}
 
-\item{path}{Path to a local file (.xlsx, .json, .csv).}
+\item{survey_name}{Optional name.}
 
-\item{google_sheet_url}{Optional URL to a Google Sheet.}
+\item{google_sheet_url}{Google Sheet URL.}
 }
 \description{
-Upload or Update a Survey
+Uploads a survey structure.
 }

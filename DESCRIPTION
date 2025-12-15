@@ -30,7 +30,6 @@ Imports:
 		lubridate,
 		commonmark,
 		rmarkdown,
-		otp,
 		keyring
 License: MIT + file LICENSE
 LazyData: true

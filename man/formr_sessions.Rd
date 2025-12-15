@@ -4,15 +4,28 @@
 \alias{formr_sessions}
 \title{List Sessions in a Run}
 \usage{
-formr_sessions(run_name, active = NULL, limit = 100)
+formr_sessions(
+  run_name,
+  active = NULL,
+  testing = NULL,
+  limit = 100,
+  offset = 0
+)
 }
 \arguments{
 \item{run_name}{Name of the run.}
 
 \item{active}{Filter: TRUE for ongoing, FALSE for finished, NULL for all.}
 
-\item{limit}{Pagination limit.}
+\item{testing}{Filter: TRUE for test sessions, FALSE for real users, NULL for all.}
+
+\item{limit}{Pagination limit (default 100).}
+
+\item{offset}{Pagination offset (default 0).}
+}
+\value{
+A data.frame containing session details (code, position, last_access, etc.).
 }
 \description{
-List Sessions in a Run
+Returns a paginated, tidy data frame of sessions.
 }

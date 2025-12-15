@@ -1,145 +1,146 @@
-#' List all surveys
+#' List Surveys
+#' 
+#' Returns a list of all surveys owned by the user.
+#' 
+#' @param name_pattern Optional. Filter surveys by name (partial match).
+#' @return A tibble of surveys (id, name, created, modified, results_table).
+#' @importFrom dplyr bind_rows as_tibble mutate
 #' @export
-formr_surveys <- function(name = NULL) {
-	query <- if(!is.null(name)) list(name = name) else NULL
-	formr_api_request("surveys", query = query)
+formr_surveys <- function(name_pattern = NULL) {
+	query <- list()
+	if (!is.null(name_pattern)) query$name <- name_pattern
+	
+	# Source: ApiHelperV1.php surveys (GET)
+	res <- formr_api_request("surveys", query = query)
+	
+	if (length(res) == 0) {
+		message("ℹ No surveys found.")
+		return(dplyr::tibble())
+	}
+	
+	dplyr::bind_rows(res) %>% 
+		dplyr::mutate(
+			created = as.POSIXct(created),
+			modified = as.POSIXct(modified),
+			id = as.integer(id)
+		) %>%
+		dplyr::as_tibble()
 }
 
-#' Download items from formr
-#'
-#' After connecting to formr using [formr_connect()]
-#' you can download items using this command. One of survey_name or path has to be specified, if both are specified, survey_name is preferred.
-#'
-#' @param survey_name case-sensitive name of a survey your account owns
-#' @param host defaults to [formr_last_host()], which defaults to https://formr.org
-#' @param path path to local JSON copy of the item table
+#' Get Survey Structure (Items)
+#' 
+#' Retrieves the item table for a survey. Handles complex nested JSON structures
+#' by converting attributes into list-columns.
+#' 
+#' @param survey_name The name of the survey.
+#' @return A tibble containing the items.
+#' @importFrom dplyr bind_rows as_tibble
 #' @export
-#' @examples
-#' \dontrun{
-#' formr_connect(email = 'you@@example.net', password = 'zebrafinch' )
-#' formr_items(survey_name = 'training_diary' )
-#' }
-#' formr_items(path = 
-#' 	system.file('extdata/gods_example_items.json', package = 'formr', mustWork = TRUE))[1:2]
-
-formr_items = function(survey_name = NULL, host = formr_last_host(), 
-											 path = NULL) {
-	item_list = NULL
-	if (!is.null(survey_name)) {
-		resp = httr::GET(paste0(host, "/admin/survey/", survey_name, 
-														"/export_item_table?format=json"))
-		if (resp$status_code == 200) {
-			item_list = jsonlite::fromJSON(txt = httr::content(resp, 
-																												 encoding = "utf8", as = "text"), simplifyDataFrame = FALSE)
-		} else {
-			stop("This survey does not exist.")
-		}
-	} else {
-		item_list = jsonlite::fromJSON(txt = path, simplifyDataFrame = FALSE)
+formr_survey_structure <- function(survey_name) {
+	# 1. Fetch Data
+	# Source: ApiHelperV1.php surveys (GET /surveys/{name})
+	res <- formr_api_request(
+		endpoint = paste0("surveys/", survey_name), 
+		method = "GET"
+	)
+	
+	# 2. Validation
+	if (is.null(res$items) || length(res$items) == 0) {
+		warning(sprintf("⚠️ Survey '%s' exists but has no items.", survey_name))
+		return(dplyr::tibble())
 	}
-	if (!is.null(item_list)) {
-		if (!is.null(item_list[["items"]])) {
-			item_list = item_list[["items"]]
-		}
-		for (i in seq_along(item_list)) {
-			if (item_list[[i]]$type == "rating_button") {
-				from = 1
-				to = 5
-				by = 1
-				if (!is.null(item_list[[i]]$type_options)) {
-					# has the format 1,6 or 1,6,1 + possibly name of choice list
-					# allow for 1, 6, 1 and 1,6,1
-					item_list[[i]]$type_options <- 
-						stringr::str_replace_all(item_list[[i]]$type_options,
-																		 ",\\s+", ",")
-					# truncate choice list
-					sequence = stringr::str_split(item_list[[i]]$type_options, 
-																				"\\s", n = 2)[[1]][1]
-					sequence = stringr::str_split(sequence, ",")[[1]]
-					if (length(sequence) == 3) {
-						from = as.numeric(sequence[1])
-						to = as.numeric(sequence[2])
-						by = as.numeric(sequence[3])
-					} else if (length(sequence) == 2) {
-						from = as.numeric(sequence[1])
-						to = as.numeric(sequence[2])
-					} else if (length(sequence) == 1) {
-						to = as.numeric(sequence[1])
-					}
-				}
-				sequence = seq(from, to, ifelse(to >= from, by, 
-																				ifelse( by > 0, -1 * by, by)))
-				names(sequence) = sequence
-				if (length(item_list[[i]]$choices) <= 2) {
-					choices = item_list[[i]]$choices
-					from_pos <- which(sequence == from)
-					to_pos <- which(sequence == to)
-					sequence[ from_pos ] = paste0(sequence[ from_pos ], ": ", choices[[1]])
-					sequence[ to_pos ] = paste0(sequence[ to_pos ], ": ", choices[[length(choices)]])
-				} else {
-					for (c in seq_along(item_list[[i]]$choices)) {
-						sequence[ names(item_list[[i]]$choices)[c] == sequence ]    = paste0(names(item_list[[i]]$choices)[c], ": ", item_list[[i]]$choices[[c]])
-					}
-				}
-				item_list[[i]]$choices = as.list(sequence)
-			}
-			# named array fails, if names go from 0 to len-1
-			if (!is.null(item_list[[i]]$choices) && is.null(names(item_list[[i]]$choices))) {
-				names(item_list[[i]]$choices) = 0:(length(item_list[[i]]$choices)-1)
+	
+	# 3. Helper to clean a single item
+	# This prevents "row explosion" by wrapping vectors/lists in a list()
+	process_item <- function(x) {
+		
+		# List of fields that are known to be nested or vector-heavy
+		# We must wrap these in list() so they occupy 1 cell in the table
+		complex_fields <- c(
+			"input_attributes", 
+			"parent_attributes", 
+			"allowed_classes", 
+			"choices", 
+			"val_errors", 
+			"val_warnings"
+		)
+		
+		for (field in complex_fields) {
+			if (!is.null(x[[field]])) {
+				x[[field]] <- list(x[[field]])
+			} else {
+				x[[field]] <- list(NULL) # Ensure column exists as list-column
 			}
 		}
-		names(item_list) = sapply(item_list, function(item) { item$name })
-		class(item_list) = c("formr_item_list", class(item_list))
-		item_list
-	} else {
-		stop("Have to specify either path to exported JSON file or get item table from formr.")
+		
+		# Convert NULLs to NAs (scalars only) to keep tibble happy
+		x <- lapply(x, function(val) {
+			if (is.null(val)) return(NA)
+			return(val)
+		})
+		
+		return(tibble::as_tibble(x))
 	}
+	
+	# 4. Iterate and Bind
+	# res$items is a named list. We remove names to avoid row-name issues.
+	item_list <- unname(res$items)
+	
+	# Process each item individually
+	clean_list <- lapply(item_list, process_item)
+	
+	# Combine
+	df <- dplyr::bind_rows(clean_list)
+	
+	return(df)
 }
 
 #' Upload/Update Survey
 #' 
-#' Uploads an item table (Excel, JSON, CSV) to create or update a survey.
-#' @param survey_name Name of the survey.
-#' @param file_path Path to the file.
+#' Uploads a survey structure.
+#' 
+#' @param file_path Path to a local file.
+#' @param survey_name Optional name.
+#' @param google_sheet_url Google Sheet URL.
 #' @export
-formr_upload_survey <- function(survey_name, file_path) {
-	if (!file.exists(file_path)) stop("File not found: ", file_path)
+formr_upload_survey <- function(file_path = NULL, survey_name = NULL, google_sheet_url = NULL) {
+	
+	if (is.null(survey_name)) {
+		if (!is.null(file_path)) {
+			survey_name <- tools::file_path_sans_ext(basename(file_path))
+			message(sprintf("ℹ Name not provided. Defaulting survey_name to '%s'", survey_name))
+		} else {
+			stop("You must provide 'survey_name' if you are not providing a local 'file_path'.")
+		}
+	}
+	
+	body <- list()
+	
+	if (!is.null(google_sheet_url)) {
+		body$google_sheet <- google_sheet_url
+	} else if (!is.null(file_path)) {
+		if (!file.exists(file_path)) stop("File not found: ", file_path)
+		body$file <- httr::upload_file(file_path)
+	} else {
+		stop("You must provide either 'file_path' or 'google_sheet_url'.")
+	}
 	
 	res <- formr_api_request(
 		endpoint = paste0("surveys/", survey_name),
 		method = "POST",
-		body = list(file = httr::upload_file(file_path)),
-		encode = "multipart"
+		body = body,
+		# Force multipart if we have a file, otherwise json
+		encode = if (!is.null(file_path)) "multipart" else "json"
 	)
 	
-	message(sprintf("✅ Survey '%s' uploaded successfully.", res$name))
-	invisible(res)
-}
-
-#' Download detailed result timings and display counts from formr
-#'
-#' After connecting to formr using [formr_connect()]
-#' you can download detailed times and display counts for each item using this command.
-#'
-#' @param survey_name case-sensitive name of a survey your account owns
-#' @param host defaults to [formr_last_host()], which defaults to https://formr.org
-#' @export
-#' @examples
-#' \dontrun{
-#' formr_connect(email = 'you@@example.net', password = 'zebrafinch' )
-#' formr_item_displays(survey_name = 'training_diary' )
-#' }
-
-formr_item_displays = function(survey_name, host = formr_last_host()) {
-  resp = httr::GET(paste0(host, "/admin/survey/", survey_name, 
-    "/export_itemdisplay?format=json"))
-
-  if (resp$status_code == 200) {
-  	results = jsonlite::fromJSON(httr::content(resp, encoding = "utf8", 
-  		as = "text")) 
-  } else	{
-  		warning("This item display table for this survey could not be accessed.")
+	message(sprintf("✅ Survey '%s' processed successfully.", res$name))
+	
+	if (!is.null(res$logs) && length(res$logs) > 0) {
+		cat("\n📋 Server Logs:\n")
+		logs <- unlist(res$logs)
+		clean_logs <- gsub("<[^>]+>", "", logs)
+		cat(paste0("  • ", clean_logs, collapse = "\n"), "\n")
 	}
-  		  
-  results
+	
+	invisible(res)
 }

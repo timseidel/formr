@@ -2,19 +2,22 @@
 % Please edit documentation in R/api_sessions.R
 \name{formr_session_action}
 \alias{formr_session_action}
-\title{Perform Action on Session}
+\title{Perform Action on Session(s)}
 \usage{
-formr_session_action(run_name, session_code, action, position = NULL)
+formr_session_action(run_name, session_codes, action, position = NULL)
 }
 \arguments{
 \item{run_name}{Name of the run.}
 
-\item{session_code}{The session ID/code.}
+\item{session_codes}{A single code or vector of session codes.}
 
 \item{action}{One of: "end_external", "toggle_testing", "move_to_position".}
 
-\item{position}{Required if action is "move_to_position".}
+\item{position}{Required only if action is "move_to_position".}
+}
+\value{
+A logical vector indicating success for each session.
 }
 \description{
-Perform Action on Session
+Controls the flow of one or more sessions.
 }

@@ -1,154 +1,178 @@
 #' @importFrom dplyr "%>%"
+#' @importFrom stats setNames
 #' @export
 dplyr::`%>%`
 
-
 #' Reverse labelled values
 #' 
-#' Taken from codebook package
-#' reverse the underlying values for a numeric [haven::labelled()] vector while keeping the labels correct
+#' Reverses the underlying values for a numeric [haven::labelled()] vector 
+#' while preserving and updating the value labels correctly.
+#' Useful for reversing Likert scales (e.g., 1=Strongly Disagree -> 5=Strongly Agree).
 #'
-#' @param x a labelled vector
-#' @return return the labelled vector with the underlying values having been reversed
+#' @param x A numeric vector, potentially with `haven::labelled` attributes.
+#' @return A vector of the same class with values reversed.
 #' @export
 #' @examples
 #' x <- haven::labelled(rep(1:3, each = 3), c(Bad = 1, Good = 5))
 #' x
 #' reverse_labelled_values(x)
 reverse_labelled_values <- function(x) {
-	labels <- attributes(x)$labels
-	values <- unname(labels)
-	labels <- names(labels)
-	if (is.factor(x) && is.null(labels) && !is.null(attributes(x)$levels)) {
-		warning("Turning a factor into a labelled numeric vector")
-		values <- seq_len(length(attributes(x)$levels))
-		labels <- attributes(x)$levels
+	
+	# 1. Handle Factors (Convert to numeric with warning)
+	if (is.factor(x)) {
+		warning(sprintf("Converting factor '%s' to numeric for reversal.", deparse(substitute(x))))
+		# Save levels as labels before converting
+		lbls <- setNames(seq_along(levels(x)), levels(x))
 		x <- as.numeric(x)
+		attr(x, "labels") <- lbls
 	}
-	missing_labels <- labels[is.na(values)]
-	missing_values <- values[is.na(values)]
-	labels <- labels[!is.na(values)]
-	values <- values[!is.na(values)]
-	if (
-		length(values) == 0 ||
-		(any(x > max(values) |
-				 x < min(values), na.rm = TRUE))) {
-		warning(deparse(substitute(x)), ": There are values outside the ",
-						"labelled range. Reversion will only work if both the minimum ",
-						"and maximum of the range are part of the responses.")
+	
+	# 2. Extract Metadata
+	labels <- attr(x, "labels")
+	if (is.null(labels)) {
+		# If no labels, just reverse based on range in data
+		vals <- stats::na.omit(unique(x))
+		if (length(vals) == 0) return(x)
+		min_val <- min(vals)
+		max_val <- max(vals)
+		return((max_val + min_val) - x)
 	}
-	if (length(values) < length(unique(x)) ) {
-		# if only some values have labels (e.g. extremes), make sure we include all
-		possible_replies <- union(values, unique(x[!is.na(x)]))
+	
+	# 3. Determine Range
+	val_range <- unname(labels)
+	
+	# Safety Check: Ensure data fits within defined labels
+	# If data contains 6 but scale is only defined 1-5, reversal is ambiguous.
+	data_vals <- stats::na.omit(unique(as.numeric(x)))
+	scale_min <- min(val_range, na.rm = TRUE)
+	scale_max <- max(val_range, na.rm = TRUE)
+	
+	if (any(data_vals < scale_min | data_vals > scale_max)) {
+		warning(sprintf("Values outside labelled range [%s, %s] detected. Reversal may be incorrect.", 
+										scale_min, scale_max))
+		# Expand range to include data extremes to avoid corruption
+		scale_min <- min(c(scale_min, data_vals))
+		scale_max <- max(c(scale_max, data_vals))
+	}
+	
+	# 4. Perform Reversal
+	# Formula: New = (Max + Min) - Old
+	# This works for any linear scale (0-based, 1-based, negative, etc.)
+	reversal_constant <- scale_max + scale_min
+	new_x <- reversal_constant - as.numeric(x)
+	
+	# 5. Update Labels
+	# We must also reverse the values associated with the labels
+	new_labels <- setNames(reversal_constant - val_range, names(labels))
+	
+	# Restore attributes
+	attributes(new_x) <- attributes(x)
+	attr(new_x, "labels") <- sort(new_labels) # Sort for tidiness
+	
+	new_x
+}
+
+#' Helper: Safe Type Conversion
+#' @noRd
+as_same_type_as <- function(target, obj) {
+	if (is.numeric(target)) {
+		suppressWarnings(as.numeric(obj))
 	} else {
-		possible_replies <- values
-	}
-	if (!is.numeric(possible_replies)) {
-		warning(deparse(substitute(x)), " is not numeric and cannot be reversed.")
-		x
-	} else {
-		range <- min(possible_replies):max(possible_replies)
-		if (length(possible_replies) <
-				length(range)) {
-			possible_replies <- range
-		}
-		
-		possible_replies <- sort(possible_replies)
-		recode_replies <- stats::setNames(
-			as.list(possible_replies), rev(possible_replies))
-		new_x <- dplyr::recode(as.numeric(x), !!!recode_replies)
-		
-		attributes(new_x) <- attributes(x)
-		attributes(new_x)$labels <- stats::setNames(
-			c(rev(values), missing_values),
-			c(labels, missing_labels))
-		new_x
+		methods::as(obj, class(target)[1])
 	}
 }
 
-
-as_same_type_as <- function(instance_of_target_class, object_to_convert) {
-	target_class = class(instance_of_target_class)[1]
-	if (target_class == 'numeric') {
-		as.numeric(object_to_convert)
-	} else {
-		methods::as(object_to_convert, target_class)
-	}
-}
-
-#' Aggregate variables and remember which variables this were
+#' Aggregate variables and document construction
 #'
-#' Copied from codebook.
-#' The resulting variables will have the attribute `scale_item_names` containing
-#' the basis for aggregation. Its `label` attribute will refer to the common stem of the
-#' aggregated variable names (if any), the number of variables, and the
-#' aggregation function.
+#' Computes a row-wise aggregate (mean, sum) and attaches metadata about 
+#' which items were included. Useful for transparency in codebooks.
 #'
-#' @param items data.frame of the items that should be aggregated
-#' @param fun aggregation function, defaults to rowMeans with na.rm = FALSE
-#' @param stem common stem for the variables, specify if it should not be auto-detected
-#' as the longest common stem of the variable names
+#' @param items A data.frame/tibble of the items to aggregate.
+#' @param fun Aggregation function (default: `rowMeans`).
+#' @param stem Optional manual stem name. If NULL, auto-detects longest common prefix.
+#' @return A numeric vector with attributes `scale_item_names` and `label`.
 #' @export
 #' @examples
-#' testdf <- data.frame(bfi_neuro_1 = rnorm(20), bfi_neuro_2 = rnorm(20),
-#'                     bfi_neuro_3R = rnorm(20), age = rpois(20, 30))
-#' item_names <- c('bfi_neuro_1', 'bfi_neuro_2', 'bfi_neuro_3R')
-#' testdf$bfi_neuro <- aggregate_and_document_scale(testdf[, item_names])
-#' testdf$bfi_neuro
+#' df <- data.frame(e1 = 1:5, e2 = 5:1, e3 = 1:5)
+#' scale_score <- aggregate_and_document_scale(df)
+#' attr(scale_score, "label")
 aggregate_and_document_scale <- function(items, fun = rowMeans, stem = NULL) {
-	new_scale <- fun(items)
+	
+	# Calculate Score
+	# We convert to matrix to ensure rowMeans works on tibbles safely
+	new_scale <- fun(as.matrix(items), na.rm = TRUE)
+	
 	item_names <- names(items)
-	attributes(new_scale)$scale_item_names <- item_names
 	
-	# find longest common stem
+	# Auto-detect common stem (e.g. "bfi_n_1", "bfi_n_2" -> "bfi_n")
 	if (is.null(stem)) {
-		max_len <- min(nchar(item_names))
-		for (l in max_len:0) {
-			stem <- unique(stringr::str_sub(item_names, 1, l))
-			if (length(stem) == 1) break
+		stem <- ""
+		if (length(item_names) > 1) {
+			# Simple heuristic: compare first and last item names
+			# (Robust enough for typical item naming conventions)
+			common <- tryCatch({
+				# Find longest common substring of first two items
+				# Then trim trailing numbers/underscores
+				s1 <- item_names[1]
+				s2 <- item_names[2]
+				# Basic character matching loop (vectorized substring is messy)
+				for(i in nchar(s1):1) {
+					sub <- substr(s1, 1, i)
+					if (startsWith(s2, sub)) {
+						stem <- sub
+						break
+					}
+				}
+				stem
+			}, error = function(e) "")
+		} else {
+			stem <- item_names[1]
 		}
-	}
-	# string trimming for idiots
-	if (nchar(stem)) {
-		stem <- stringr::str_match(stem, "^(.+?)_?$")[, 2]
+		
+		# Clean up stem: remove trailing numbers, underscores, or 'R'
+		# e.g. "bfi_n_" -> "bfi_n"
+		stem <- sub("[_0-9R]+$", "", stem)
 	}
 	
-	attributes(new_scale)$label <- paste(ncol(items), stem, "items aggregated by",
-																			 deparse(substitute(fun)))
+	# Attach Metadata
+	attr(new_scale, "scale_item_names") <- item_names
+	attr(new_scale, "label") <- sprintf("%d %s items aggregated by %s", 
+																			ncol(items), stem, deparse(substitute(fun)))
+	
 	new_scale
 }
 
-
-
 #' Rescue lost attributes
 #'
-#' Taken from codebook
-#' You can use this function if some of your items have lost their attributes during wrangling
-#' Variables have to have the same name (Duh) and no attributes should be overwritten.
-#' But use with care. Similar to `labelled::copy_labels()`.
+#' Copies attributes (labels, SPSS formats) from one data frame to another.
+#' Useful after `dplyr` operations that strip attributes.
 #'
-#'
-#' @param df_no_attributes the data frame with missing attributes
-#' @param df_with_attributes the data frame from which you want to restore attributes
-#'
+#' @param df_target The data frame missing attributes.
+#' @param df_source The reference data frame containing attributes.
+#' @return `df_target` with restored attributes.
 #' @export
-#'
-rescue_attributes <- function(df_no_attributes, df_with_attributes) {
-	for (i in seq_along(names(df_no_attributes))) {
-		var <- names(df_no_attributes)[i]
-		if (var %in% names(df_with_attributes) &&
-				is.null(attributes(df_no_attributes[[var]]))) {
-			attributes(df_no_attributes[[var]]) <-
-				attributes(df_with_attributes[[var]])
+rescue_attributes <- function(df_target, df_source) {
+	
+	# Identify common columns
+	common_cols <- intersect(names(df_target), names(df_source))
+	
+	for (col in common_cols) {
+		# If target has NO attributes, copy all from source
+		if (is.null(attributes(df_target[[col]]))) {
+			attributes(df_target[[col]]) <- attributes(df_source[[col]])
 		} else {
-			for (e in seq_along(names(attributes(df_with_attributes[[var]])))) {
-				attrib_name <- names(attributes(df_with_attributes[[var]]))[e]
-				if (!attrib_name %in% names(attributes(df_no_attributes[[var]]))) {
-					attributes(df_no_attributes[[var]])[[attrib_name]] <-
-						attributes(df_with_attributes[[var]])[[attrib_name]]
-				}
+			# If target has SOME attributes, merge missing ones
+			source_attrs <- attributes(df_source[[col]])
+			target_attrs <- attributes(df_target[[col]])
+			
+			# Find attributes in source that are missing in target
+			missing_keys <- setdiff(names(source_attrs), names(target_attrs))
+			
+			for (key in missing_keys) {
+				attr(df_target[[col]], key) <- source_attrs[[key]]
 			}
 		}
 	}
-	df_no_attributes
+	
+	df_target
 }

@@ -13,6 +13,10 @@ formr_create_session(run_name, codes = NULL, testing = FALSE)
 
 \item{testing}{Logical. Mark these sessions as testing?}
 }
+\value{
+Invisibly returns the API response (including created sessions and any errors).
+}
 \description{
-Create Session(s)
+Creates one or more sessions. If \code{codes} is NULL, one random session is created.
+If \code{codes} is provided, tries to create sessions with those specific codes.
 }

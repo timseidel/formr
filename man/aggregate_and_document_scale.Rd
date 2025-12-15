@@ -2,29 +2,26 @@
 % Please edit documentation in R/data_wrangling.R
 \name{aggregate_and_document_scale}
 \alias{aggregate_and_document_scale}
-\title{Aggregate variables and remember which variables this were}
+\title{Aggregate variables and document construction}
 \usage{
 aggregate_and_document_scale(items, fun = rowMeans, stem = NULL)
 }
 \arguments{
-\item{items}{data.frame of the items that should be aggregated}
+\item{items}{A data.frame/tibble of the items to aggregate.}
 
-\item{fun}{aggregation function, defaults to rowMeans with na.rm = FALSE}
+\item{fun}{Aggregation function (default: \code{rowMeans}).}
 
-\item{stem}{common stem for the variables, specify if it should not be auto-detected
-as the longest common stem of the variable names}
+\item{stem}{Optional manual stem name. If NULL, auto-detects longest common prefix.}
+}
+\value{
+A numeric vector with attributes \code{scale_item_names} and \code{label}.
 }
 \description{
-Copied from codebook.
-The resulting variables will have the attribute \code{scale_item_names} containing
-the basis for aggregation. Its \code{label} attribute will refer to the common stem of the
-aggregated variable names (if any), the number of variables, and the
-aggregation function.
+Computes a row-wise aggregate (mean, sum) and attaches metadata about
+which items were included. Useful for transparency in codebooks.
 }
 \examples{
-testdf <- data.frame(bfi_neuro_1 = rnorm(20), bfi_neuro_2 = rnorm(20),
-                    bfi_neuro_3R = rnorm(20), age = rpois(20, 30))
-item_names <- c('bfi_neuro_1', 'bfi_neuro_2', 'bfi_neuro_3R')
-testdf$bfi_neuro <- aggregate_and_document_scale(testdf[, item_names])
-testdf$bfi_neuro
+df <- data.frame(e1 = 1:5, e2 = 5:1, e3 = 1:5)
+scale_score <- aggregate_and_document_scale(df)
+attr(scale_score, "label")
 }

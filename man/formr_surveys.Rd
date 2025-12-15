@@ -2,10 +2,16 @@
 % Please edit documentation in R/api_surveys.R
 \name{formr_surveys}
 \alias{formr_surveys}
-\title{List all surveys}
+\title{List Surveys}
 \usage{
-formr_surveys()
+formr_surveys(name_pattern = NULL)
+}
+\arguments{
+\item{name_pattern}{Optional. Filter surveys by name (partial match).}
+}
+\value{
+A tibble of surveys (id, name, created, modified, results_table).
 }
 \description{
-List all surveys
+Returns a list of all surveys owned by the user.
 }

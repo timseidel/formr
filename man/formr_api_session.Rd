@@ -6,9 +6,6 @@
 \usage{
 formr_api_session()
 }
-\value{
-A list with elements base_url and token, or NULL if not authenticated.
-}
 \description{
-Return the current formr API session (base URL and token), if available.
+Current API session
 }

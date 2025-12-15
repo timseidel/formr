@@ -7,14 +7,15 @@
 reverse_labelled_values(x)
 }
 \arguments{
-\item{x}{a labelled vector}
+\item{x}{A numeric vector, potentially with \code{haven::labelled} attributes.}
 }
 \value{
-return the labelled vector with the underlying values having been reversed
+A vector of the same class with values reversed.
 }
 \description{
-Taken from codebook package
-reverse the underlying values for a numeric \code{\link[haven:labelled]{haven::labelled()}} vector while keeping the labels correct
+Reverses the underlying values for a numeric \code{\link[haven:labelled]{haven::labelled()}} vector
+while preserving and updating the value labels correctly.
+Useful for reversing Likert scales (e.g., 1=Strongly Disagree -> 5=Strongly Agree).
 }
 \examples{
 x <- haven::labelled(rep(1:3, each = 3), c(Bad = 1, Good = 5))

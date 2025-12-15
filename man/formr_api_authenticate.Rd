@@ -2,32 +2,24 @@
 % Please edit documentation in R/api_core.R
 \name{formr_api_authenticate}
 \alias{formr_api_authenticate}
-\title{Authenticate with the formr API}
+\title{Authenticate with formr}
 \usage{
 formr_api_authenticate(
+  host = "https://formr.org",
   client_id = NULL,
   client_secret = NULL,
-  host = "https://api.formr.org",
-  access_token = NULL,
-  verify = TRUE
+  access_token = NULL
 )
 }
 \arguments{
-\item{client_id}{Character. OAuth client ID (for client credentials flow).}
+\item{host}{API Base URL.}
 
-\item{client_secret}{Character. OAuth client secret (for client credentials flow).}
+\item{client_id}{OAuth Client ID.}
 
-\item{host}{Character. API base URL. Defaults to "https://api.formr.org".}
+\item{client_secret}{OAuth Client Secret.}
 
-\item{access_token}{Character. Use this token directly (no OAuth request).
-If NULL, the function looks for an object named access_token in the calling environment.}
-
-\item{verify}{Logical. If TRUE (default), verify the access_token with a quick API call.}
-}
-\value{
-TRUE (invisibly) on success.
+\item{access_token}{Direct Access Token.}
 }
 \description{
-Authenticate using an access token (preferred) or OAuth client credentials.
-Stores the session for later requests.
+Connects to the API. If no credentials are provided, it tries to find them in the keyring.
 }

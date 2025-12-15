@@ -4,16 +4,17 @@
 \alias{rescue_attributes}
 \title{Rescue lost attributes}
 \usage{
-rescue_attributes(df_no_attributes, df_with_attributes)
+rescue_attributes(df_target, df_source)
 }
 \arguments{
-\item{df_no_attributes}{the data frame with missing attributes}
+\item{df_target}{The data frame missing attributes.}
 
-\item{df_with_attributes}{the data frame from which you want to restore attributes}
+\item{df_source}{The reference data frame containing attributes.}
+}
+\value{
+\code{df_target} with restored attributes.
 }
 \description{
-Taken from codebook
-You can use this function if some of your items have lost their attributes during wrangling
-Variables have to have the same name (Duh) and no attributes should be overwritten.
-But use with care. Similar to \code{labelled::copy_labels()}.
+Copies attributes (labels, SPSS formats) from one data frame to another.
+Useful after \code{dplyr} operations that strip attributes.
 }
