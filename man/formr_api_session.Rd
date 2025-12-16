@@ -2,10 +2,10 @@
 % Please edit documentation in R/api_core.R
 \name{formr_api_session}
 \alias{formr_api_session}
-\title{Current API session}
+\title{Get Current API session}
 \usage{
 formr_api_session()
 }
 \description{
-Current API session
+Get Current API session
 }

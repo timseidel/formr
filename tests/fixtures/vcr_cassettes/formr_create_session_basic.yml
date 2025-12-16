@@ -1,0 +1,25 @@
+http_interactions:
+- request:
+    method: POST
+    uri: http://formr-host-redacted/v1/runs/test-run/sessions
+    body:
+      string: '{"testing":1}'
+  response:
+    status: 201
+    headers:
+      date: Tue, 16 Dec 2025 12:56:18 GMT
+      server: Apache/2.4.65 (Debian)
+      x-powered-by: PHP/8.2.2
+      expires: Thu, 19 Nov 1981 08:52:00 GMT
+      cache-control: no-store, no-cache, must-revalidate
+      pragma: no-cache
+      vary: Accept-Encoding
+      content-encoding: gzip
+      access-control-allow-origin: ocpu.rforms.org
+      content-length: '119'
+      connection: close
+      content-type: application/json
+    body:
+      string: '{"count_created":1,"sessions":["fpOp7G5TbabZzAf4oaxhYWCOwRsIdnszIEWG9AjNynCjol7HW7NV-bxW9sc0yssN"]}'
+  recorded_at: 2025-12-16 12:56:18
+recorded_with: VCR-vcr/2.1.0

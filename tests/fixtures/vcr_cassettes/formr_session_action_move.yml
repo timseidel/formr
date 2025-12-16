@@ -1,0 +1,68 @@
+http_interactions:
+- request:
+    method: POST
+    uri: http://formr-host-redacted/v1/runs/test-run/sessions
+    body:
+      string: '{"testing":1}'
+  response:
+    status: 201
+    headers:
+      date: Tue, 16 Dec 2025 12:56:18 GMT
+      server: Apache/2.4.65 (Debian)
+      x-powered-by: PHP/8.2.2
+      expires: Thu, 19 Nov 1981 08:52:00 GMT
+      cache-control: no-store, no-cache, must-revalidate
+      pragma: no-cache
+      vary: Accept-Encoding
+      content-encoding: gzip
+      access-control-allow-origin: ocpu.rforms.org
+      content-length: '119'
+      connection: close
+      content-type: application/json
+    body:
+      string: '{"count_created":1,"sessions":["YKa6rT2k5UThR2IAMhrpc6B0n15yv-ZgFEC6Wy0Z-gcmK1NoZVtvzSim5rxATi2c"]}'
+  recorded_at: 2025-12-16 12:56:18
+- request:
+    method: POST
+    uri: http://formr-host-redacted/v1/runs/test-run/sessions/YKa6rT2k5UThR2IAMhrpc6B0n15yv-ZgFEC6Wy0Z-gcmK1NoZVtvzSim5rxATi2c/actions
+    body:
+      string: '{"action":"move_to_position","position":10}'
+  response:
+    status: 200
+    headers:
+      date: Tue, 16 Dec 2025 12:56:18 GMT
+      server: Apache/2.4.65 (Debian)
+      x-powered-by: PHP/8.2.2
+      expires: Thu, 19 Nov 1981 08:52:00 GMT
+      cache-control: no-store, no-cache, must-revalidate
+      pragma: no-cache
+      access-control-allow-origin: ocpu.rforms.org
+      content-length: '2'
+      connection: close
+      content-type: application/json
+    body:
+      string: '[]'
+  recorded_at: 2025-12-16 12:56:18
+- request:
+    method: GET
+    uri: http://formr-host-redacted/v1/runs/test-run/sessions/YKa6rT2k5UThR2IAMhrpc6B0n15yv-ZgFEC6Wy0Z-gcmK1NoZVtvzSim5rxATi2c
+  response:
+    status: 200
+    headers:
+      date: Tue, 16 Dec 2025 12:56:18 GMT
+      server: Apache/2.4.65 (Debian)
+      x-powered-by: PHP/8.2.2
+      expires: Thu, 19 Nov 1981 08:52:00 GMT
+      cache-control: no-store, no-cache, must-revalidate
+      pragma: no-cache
+      vary: Accept-Encoding
+      content-encoding: gzip
+      access-control-allow-origin: ocpu.rforms.org
+      content-length: '262'
+      connection: close
+      content-type: application/json
+    body:
+      string: '{"id":448,"run_id":139,"user_id":null,"session":"YKa6rT2k5UThR2IAMhrpc6B0n15yv-ZgFEC6Wy0Z-gcmK1NoZVtvzSim5rxATi2c","created":"2025-12-16
+        13:56:18","ended":null,"last_access":null,"position":10,"current_unit_session_id":316,"deactivated":0,"no_email":null,"testing":1,"current_unit":{"id":4,"type":"Survey","description":"platzhalter","session_id":316}}'
+  recorded_at: 2025-12-16 12:56:18
+recorded_with: VCR-vcr/2.1.0

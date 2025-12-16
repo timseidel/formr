@@ -10,3 +10,4 @@ package.json
 formr-R-package-codebase.xml
 .repomixignore
 repomix.config.json
+.Renviron

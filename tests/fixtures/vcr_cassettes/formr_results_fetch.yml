@@ -1,0 +1,84 @@
+http_interactions:
+- request:
+    method: GET
+    uri: http://formr-host-redacted/v1/runs/test-run/results
+  response:
+    status: 200
+    headers:
+      date: Tue, 16 Dec 2025 12:56:18 GMT
+      server: Apache/2.4.65 (Debian)
+      x-powered-by: PHP/8.2.2
+      expires: Thu, 19 Nov 1981 08:52:00 GMT
+      cache-control: no-store, no-cache, must-revalidate
+      pragma: no-cache
+      vary: Accept-Encoding
+      content-encoding: gzip
+      access-control-allow-origin: ocpu.rforms.org
+      content-length: '2308'
+      connection: close
+      content-type: application/json
+    body:
+      string: '{"platzhalter":[{"session":"cleverBushElephantXXXrhQUbSH3UO7AsnZ8x3VjnqpIlFIhbOpQlcGxxdOXce6","created":"2025-12-16
+        13:40:36","current_position":10,"mc1_text":"1","nav1":"katze","nav2":"{\"platzhalter\":[{\"session\":\"determinedEarwigXXX_C2VCo9eCr-H1RgQhDqVt-1Wg39LSMPiFw_kJN2aNA7Gu\",\"created\":\"2025-11-14
+        15:06:04\",\"current_position\":1,\"mc1_text\":null,\"nav1\":null,\"nav2\":null,\"pic_mc\":null,\"submit_mc2\":null,\"test111\":null},{\"session\":\"differentIndochineseTigerXXXTbrCi1Q2goBnbyJtZBXuaAf_N_Snu15XBE45\",\"created\":\"2025-11-14
+        15:08:15\",\"current_position\":1,\"mc1_text\":null,\"nav1\":null,\"nav2\":null,\"pic_mc\":null,\"submit_mc2\":null,\"test111\":null},{\"session\":\"puzzledMacaroniPenguinXXXKTYAGmsYoX5AQ8R1iQqk6ojN0fQW0tLFAZ0Ur9O\",\"created\":\"2025-11-14
+        15:10:48\",\"current_position\":1,\"mc1_text\":null,\"nav1\":null,\"nav2\":null,\"pic_mc\":null,\"submit_mc2\":null,\"test111\":null},{\"session\":\"longIguanaXXX1KjXpRhsIjE4z1d3WNin1qEP93gwxTim4_6rZztqELHB44G4_kY\",\"created\":\"2025-11-26
+        11:46:43\",\"current_position\":2,\"mc1_text\":\"1\",\"nav1\":\"katze\",\"nav2\":\"katze\",\"pic_mc\":\"1\",\"submit_mc2\":null,\"test111\":\"1\"},{\"session\":\"thankfulMarineToadXXXzQJIH_IET7VthUl2kDHcJ0t24rxDFH6zPkcfPgRXpkW\",\"created\":\"2025-11-26
+        11:49:19\",\"current_position\":101,\"mc1_text\":\"1\",\"nav1\":\"katze\",\"nav2\":\"katze\",\"pic_mc\":\"1\",\"submit_mc2\":null,\"test111\":\"1\"},{\"session\":\"poorFennecXXXJypvpM6JIJizbuWdMrqVlh8dUG2pG283c1kMb25xtTMadtVvBbc\",\"created\":\"2025-11-26
+        11:50:17\",\"current_position\":101,\"mc1_text\":\"1\",\"nav1\":\"katze\",\"nav2\":\"katze\",\"pic_mc\":\"1\",\"submit_mc2\":null,\"test111\":\"1\"},{\"session\":\"horribleTangXXXzBBWmQlmI-Ib1qQ3EK-3M4FA6Do2svSenJhfroXqMlUts6pI5\",\"created\":\"2025-11-26
+        12:16:41\",\"current_position\":101,\"mc1_text\":\"1\",\"nav1\":\"katze\",\"nav2\":\"katze\",\"pic_mc\":\"1\",\"submit_mc2\":null,\"test111\":\"1\"},{\"session\":\"openSpongeXXXty8NEBzOTxNkRzCkoxVUGsr-dW1e9QIc1Yh_CuNGk0WOWncHpuv\",\"created\":\"2025-11-26
+        12:30:40\",\"current_position\":1,\"mc1_text\":null,\"nav1\":null,\"nav2\":null,\"pic_mc\":null,\"submit_mc2\":null,\"test111\":\"1\"},{\"session\":\"cleverDuskyXXXImF6US96gHRPNfd5O0uiNT6po0P9ThxWrKs83hfwWm5hmBv7LG\",\"created\":\"2025-11-26
+        12:32:44\",\"current_position\":1,\"mc1_text\":null,\"nav1\":null,\"nav2\":null,\"pic_mc\":null,\"submit_mc2\":null,\"test111\":\"1\"},{\"session\":\"crowdedPygmyXXXZ4nMjpVdYVz9jz8CZarkJ99W1v9nRk3ZX9L8cZbkPrWJWbj9t\",\"created\":\"2025-12-14
+        20:10:26\",\"current_position\":1,\"mc1_text\":null,\"nav1\":null,\"nav2\":null,\"pic_mc\":null,\"submit_mc2\":null,\"test111\":\"1\"},{\"session\":\"pricklyPossumXXX_xIxyVQXwjjLx955KD1JrBk8UuIuZhuAZ_SPQvtfsKRWdmJn\",\"created\":\"2025-12-14
+        20:15:12\",\"current_position\":1,\"mc1_text\":null,\"nav1\":null,\"nav2\":null,\"pic_mc\":null,\"submit_mc2\":null,\"test111\":\"1\"},{\"session\":\"boredFurSealXXXDKcX0y2trhRDd4nY7ckRp1VFtDwLtx4As_qgIt00dgQuC8haJ\",\"created\":\"2025-12-14
+        20:16:19\",\"current_position\":1,\"mc1_text\":null,\"nav1\":null,\"nav2\":null,\"pic_mc\":null,\"submit_mc2\":null,\"test111\":\"1\"},{\"session\":\"successfulLittlePenguinXXXgKZQgcuB5zEhIk_5rWmhK56pjF4eGJQdp1pZNz\",\"created\":\"2025-12-14
+        20:19:06\",\"current_position\":1,\"mc1_text\":null,\"nav1\":null,\"nav2\":null,\"pic_mc\":null,\"submit_mc2\":null,\"test111\":\"1\"},{\"session\":\"impossibleCrestedPenguinXXXlSn8SOPb6-Sii-zfXKymwVvgOujCBdpt1s3MK\",\"created\":\"2025-12-14
+        20:19:41\",\"current_position\":1,\"mc1_text\":null,\"nav1\":null,\"nav2\":null,\"pic_mc\":null,\"submit_mc2\":null,\"test111\":\"1\"},{\"session\":\"cautiousHornedFrogXXXRyjQBLMBT1a06MpgLCt5XoT-QH5eJbCeZvlh9weXnWu\",\"created\":\"2025-12-14
+        20:20:37\",\"current_position\":1,\"mc1_text\":null,\"nav1\":null,\"nav2\":null,\"pic_mc\":null,\"submit_mc2\":null,\"test111\":\"1\"},{\"session\":\"unsightlyQuollXXX9Lg69nEJp9zuzLKRa64FuYRhJM9ljCnQa4bqIegdJ3hdvyS\",\"created\":\"2025-12-14
+        20:21:42\",\"current_position\":1,\"mc1_text\":null,\"nav1\":null,\"nav2\":null,\"pic_mc\":null,\"submit_mc2\":null,\"test111\":\"1\"},{\"session\":\"puzzledTuataraXXXoJa4bny9eDBUSqBzIz4Ec0AZYamf5Sz_VjvwebqRg-7T899\",\"created\":\"2025-12-14
+        20:23:08\",\"current_position\":1,\"mc1_text\":null,\"nav1\":null,\"nav2\":null,\"pic_mc\":null,\"submit_mc2\":null,\"test111\":\"1\"},{\"session\":\"wastedDogoXXXDoyxiOVfuktCZoCTLBEUvkO3n2xHme-CFb_0ApTBLk5h83Zo6je\",\"created\":\"2025-12-14
+        20:23:46\",\"current_position\":1,\"mc1_text\":null,\"nav1\":null,\"nav2\":\"<!DOCTYPE
+        HTML PUBLIC \\\"-\\\/\\\/IETF\\\/\\\/DTD HTML 2.0\\\/\\\/EN\\\">\\n<html><head>\\n<title>404
+        Not Found<\\\/title>\\n<\\\/head><body>\\n<h1>Not Found<\\\/h1>\\n<p>The requested
+        URL was not found on this server.<\\\/p>\\n<hr>\\n<address>Apache\\\/2.4.58
+        (Ubuntu) Server at formr-host-redacted Port 80<\\\/address>\\n<\\\/body><\\\/html>\\n\",\"pic_mc\":null,\"submit_mc2\":null,\"test111\":\"1\"},{\"session\":\"beautifulHoundXXXmaS50UCBiCzyXh4ZMO00Ko5rnN-FknwIA6j18B7uuzLDxCU\",\"created\":\"2025-12-14
+        20:38:05\",\"current_position\":1,\"mc1_text\":null,\"nav1\":null,\"nav2\":\"<!DOCTYPE
+        HTML PUBLIC \\\"-\\\/\\\/IETF\\\/\\\/DTD HTML 2.0\\\/\\\/EN\\\">\\n<html><head>\\n<title>404
+        Not Found<\\\/title>\\n<\\\/head><body>\\n<h1>Not Found<\\\/h1>\\n<p>The requested
+        URL was not found on this server.<\\\/p>\\n<hr>\\n<address>Apache\\\/2.4.58
+        (Ubuntu) Server at formr-host-redacted Port 80<\\\/address>\\n<\\\/body><\\\/html>\\n\",\"pic_mc\":null,\"submit_mc2\":null,\"test111\":\"1\"},{\"session\":\"happyTurtleXXXybWI6jwWr1yzO4XXRxi7SsyCR948GPiJ1tjJzyaVwp4snA-qcv\",\"created\":\"2025-12-14
+        20:42:14\",\"current_position\":1,\"mc1_text\":null,\"nav1\":null,\"nav2\":\"{\\\"error\\\":\\\"Insufficient
+        permissions: ''run:read'' scope required.\\\"}\",\"pic_mc\":null,\"submit_mc2\":null,\"test111\":\"1\"},{\"session\":\"enthusiasticRedWolfXXXhDj9vA3cpgCyJ5Jb4dkYzXpiGFHT99YdIokWK6z_Rm\",\"created\":\"2025-12-14
+        20:45:45\",\"current_position\":1,\"mc1_text\":null,\"nav1\":null,\"nav2\":\"{\\\"platzhalter\\\":[{\\\"session\\\":\\\"determinedEarwigXXX_C2VCo9eCr-H1RgQhDqVt-1Wg39LSMPiFw_kJN2aNA7Gu\\\",\\\"created\\\":\\\"2025-11-14
+        15:06:04\\\",\\\"current_position\\\":1,\\\"mc1_text\\\":null,\\\"nav1\\\":null,\\\"nav2\\\":null,\\\"pic_mc\\\":null,\\\"submit_mc2\\\":null,\\\"test111\\\":null},{\\\"session\\\":\\\"differentIndochineseTigerXXXTbrCi1Q2goBnbyJtZBXuaAf_N_Snu15XBE45\\\",\\\"created\\\":\\\"2025-11-14
+        15:08:15\\\",\\\"current_position\\\":1,\\\"mc1_text\\\":null,\\\"nav1\\\":null,\\\"nav2\\\":null,\\\"pic_mc\\\":null,\\\"submit_mc2\\\":null,\\\"test111\\\":null},{\\\"session\\\":\\\"puzzledMacaroniPenguinXXXKTYAGmsYoX5AQ8R1iQqk6ojN0fQW0tLFAZ0Ur9O\\\",\\\"created\\\":\\\"2025-11-14
+        15:10:48\\\",\\\"current_position\\\":1,\\\"mc1_text\\\":null,\\\"nav1\\\":null,\\\"nav2\\\":null,\\\"pic_mc\\\":null,\\\"submit_mc2\\\":null,\\\"test111\\\":null},{\\\"session\\\":\\\"longIguanaXXX1KjXpRhsIjE4z1d3WNin1qEP93gwxTim4_6rZztqELHB44G4_kY\\\",\\\"created\\\":\\\"2025-11-26
+        11:46:43\\\",\\\"current_position\\\":2,\\\"mc1_text\\\":\\\"1\\\",\\\"nav1\\\":\\\"katze\\\",\\\"nav2\\\":\\\"katze\\\",\\\"pic_mc\\\":\\\"1\\\",\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"},{\\\"session\\\":\\\"thankfulMarineToadXXXzQJIH_IET7VthUl2kDHcJ0t24rxDFH6zPkcfPgRXpkW\\\",\\\"created\\\":\\\"2025-11-26
+        11:49:19\\\",\\\"current_position\\\":101,\\\"mc1_text\\\":\\\"1\\\",\\\"nav1\\\":\\\"katze\\\",\\\"nav2\\\":\\\"katze\\\",\\\"pic_mc\\\":\\\"1\\\",\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"},{\\\"session\\\":\\\"poorFennecXXXJypvpM6JIJizbuWdMrqVlh8dUG2pG283c1kMb25xtTMadtVvBbc\\\",\\\"created\\\":\\\"2025-11-26
+        11:50:17\\\",\\\"current_position\\\":101,\\\"mc1_text\\\":\\\"1\\\",\\\"nav1\\\":\\\"katze\\\",\\\"nav2\\\":\\\"katze\\\",\\\"pic_mc\\\":\\\"1\\\",\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"},{\\\"session\\\":\\\"horribleTangXXXzBBWmQlmI-Ib1qQ3EK-3M4FA6Do2svSenJhfroXqMlUts6pI5\\\",\\\"created\\\":\\\"2025-11-26
+        12:16:41\\\",\\\"current_position\\\":101,\\\"mc1_text\\\":\\\"1\\\",\\\"nav1\\\":\\\"katze\\\",\\\"nav2\\\":\\\"katze\\\",\\\"pic_mc\\\":\\\"1\\\",\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"},{\\\"session\\\":\\\"openSpongeXXXty8NEBzOTxNkRzCkoxVUGsr-dW1e9QIc1Yh_CuNGk0WOWncHpuv\\\",\\\"created\\\":\\\"2025-11-26
+        12:30:40\\\",\\\"current_position\\\":1,\\\"mc1_text\\\":null,\\\"nav1\\\":null,\\\"nav2\\\":null,\\\"pic_mc\\\":null,\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"},{\\\"session\\\":\\\"cleverDuskyXXXImF6US96gHRPNfd5O0uiNT6po0P9ThxWrKs83hfwWm5hmBv7LG\\\",\\\"created\\\":\\\"2025-11-26
+        12:32:44\\\",\\\"current_position\\\":1,\\\"mc1_text\\\":null,\\\"nav1\\\":null,\\\"nav2\\\":null,\\\"pic_mc\\\":null,\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"},{\\\"session\\\":\\\"crowdedPygmyXXXZ4nMjpVdYVz9jz8CZarkJ99W1v9nRk3ZX9L8cZbkPrWJWbj9t\\\",\\\"created\\\":\\\"2025-12-14
+        20:10:26\\\",\\\"current_position\\\":1,\\\"mc1_text\\\":null,\\\"nav1\\\":null,\\\"nav2\\\":null,\\\"pic_mc\\\":null,\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"},{\\\"session\\\":\\\"pricklyPossumXXX_xIxyVQXwjjLx955KD1JrBk8UuIuZhuAZ_SPQvtfsKRWdmJn\\\",\\\"created\\\":\\\"2025-12-14
+        20:15:12\\\",\\\"current_position\\\":1,\\\"mc1_text\\\":null,\\\"nav1\\\":null,\\\"nav2\\\":null,\\\"pic_mc\\\":null,\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"},{\\\"session\\\":\\\"boredFurSealXXXDKcX0y2trhRDd4nY7ckRp1VFtDwLtx4As_qgIt00dgQuC8haJ\\\",\\\"created\\\":\\\"2025-12-14
+        20:16:19\\\",\\\"current_position\\\":1,\\\"mc1_text\\\":null,\\\"nav1\\\":null,\\\"nav2\\\":null,\\\"pic_mc\\\":null,\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"},{\\\"session\\\":\\\"successfulLittlePenguinXXXgKZQgcuB5zEhIk_5rWmhK56pjF4eGJQdp1pZNz\\\",\\\"created\\\":\\\"2025-12-14
+        20:19:06\\\",\\\"current_position\\\":1,\\\"mc1_text\\\":null,\\\"nav1\\\":null,\\\"nav2\\\":null,\\\"pic_mc\\\":null,\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"},{\\\"session\\\":\\\"impossibleCrestedPenguinXXXlSn8SOPb6-Sii-zfXKymwVvgOujCBdpt1s3MK\\\",\\\"created\\\":\\\"2025-12-14
+        20:19:41\\\",\\\"current_position\\\":1,\\\"mc1_text\\\":null,\\\"nav1\\\":null,\\\"nav2\\\":null,\\\"pic_mc\\\":null,\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"},{\\\"session\\\":\\\"cautiousHornedFrogXXXRyjQBLMBT1a06MpgLCt5XoT-QH5eJbCeZvlh9weXnWu\\\",\\\"created\\\":\\\"2025-12-14
+        20:20:37\\\",\\\"current_position\\\":1,\\\"mc1_text\\\":null,\\\"nav1\\\":null,\\\"nav2\\\":null,\\\"pic_mc\\\":null,\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"},{\\\"session\\\":\\\"unsightlyQuollXXX9Lg69nEJp9zuzLKRa64FuYRhJM9ljCnQa4bqIegdJ3hdvyS\\\",\\\"created\\\":\\\"2025-12-14
+        20:21:42\\\",\\\"current_position\\\":1,\\\"mc1_text\\\":null,\\\"nav1\\\":null,\\\"nav2\\\":null,\\\"pic_mc\\\":null,\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"},{\\\"session\\\":\\\"puzzledTuataraXXXoJa4bny9eDBUSqBzIz4Ec0AZYamf5Sz_VjvwebqRg-7T899\\\",\\\"created\\\":\\\"2025-12-14
+        20:23:08\\\",\\\"current_position\\\":1,\\\"mc1_text\\\":null,\\\"nav1\\\":null,\\\"nav2\\\":null,\\\"pic_mc\\\":null,\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"},{\\\"session\\\":\\\"wastedDogoXXXDoyxiOVfuktCZoCTLBEUvkO3n2xHme-CFb_0ApTBLk5h83Zo6je\\\",\\\"created\\\":\\\"2025-12-14
+        20:23:46\\\",\\\"current_position\\\":1,\\\"mc1_text\\\":null,\\\"nav1\\\":null,\\\"nav2\\\":\\\"<!DOCTYPE
+        HTML PUBLIC \\\\\\\"-\\\\\\\/\\\\\\\/IETF\\\\\\\/\\\\\\\/DTD HTML 2.0\\\\\\\/\\\\\\\/EN\\\\\\\">\\\\n<html><head>\\\\n<title>404
+        Not Found<\\\\\\\/title>\\\\n<\\\\\\\/head><body>\\\\n<h1>Not Found<\\\\\\\/h1>\\\\n<p>The
+        requested URL was not found on this server.<\\\\\\\/p>\\\\n<hr>\\\\n<address>Apache\\\\\\\/2.4.58
+        (Ubuntu) Server at formr-host-redacted Port 80<\\\\\\\/address>\\\\n<\\\\\\\/body><\\\\\\\/html>\\\\n\\\",\\\"pic_mc\\\":null,\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"},{\\\"session\\\":\\\"beautifulHoundXXXmaS50UCBiCzyXh4ZMO00Ko5rnN-FknwIA6j18B7uuzLDxCU\\\",\\\"created\\\":\\\"2025-12-14
+        20:38:05\\\",\\\"current_position\\\":1,\\\"mc1_text\\\":null,\\\"nav1\\\":null,\\\"nav2\\\":\\\"<!DOCTYPE
+        HTML PUBLIC \\\\\\\"-\\\\\\\/\\\\\\\/IETF\\\\\\\/\\\\\\\/DTD HTML 2.0\\\\\\\/\\\\\\\/EN\\\\\\\">\\\\n<html><head>\\\\n<title>404
+        Not Found<\\\\\\\/title>\\\\n<\\\\\\\/head><body>\\\\n<h1>Not Found<\\\\\\\/h1>\\\\n<p>The
+        requested URL was not found on this server.<\\\\\\\/p>\\\\n<hr>\\\\n<address>Apache\\\\\\\/2.4.58
+        (Ubuntu) Server at formr-host-redacted Port 80<\\\\\\\/address>\\\\n<\\\\\\\/body><\\\\\\\/html>\\\\n\\\",\\\"pic_mc\\\":null,\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"},{\\\"session\\\":\\\"happyTurtleXXXybWI6jwWr1yzO4XXRxi7SsyCR948GPiJ1tjJzyaVwp4snA-qcv\\\",\\\"created\\\":\\\"2025-12-14
+        20:42:14\\\",\\\"current_position\\\":1,\\\"mc1_text\\\":null,\\\"nav1\\\":null,\\\"nav2\\\":\\\"{\\\\\\\"error\\\\\\\":\\\\\\\"Insufficient
+        permissions: ''run:read'' scope required.\\\\\\\"}\\\",\\\"pic_mc\\\":null,\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"},{\\\"session\\\":\\\"enthusiasticRedWolfXXXhDj9vA3cpgCyJ5Jb4dkYzXpiGFHT99YdIokWK6z_Rm\\\",\\\"created\\\":\\\"2025-12-14
+        20:45:45\\\",\\\"current_position\\\":1,\\\"mc1_text\\\":null,\\\"nav1\\\":null,\\\"nav2\\\":null,\\\"pic_mc\\\":null,\\\"submit_mc2\\\":null,\\\"test111\\\":\\\"1\\\"}]}\",\"pic_mc\":null,\"submit_mc2\":null,\"test111\":\"1\"}]}","pic_mc":"1","submit_mc2":null,"test111":"1"}]}'
+  recorded_at: 2025-12-16 12:56:18
+recorded_with: VCR-vcr/2.1.0

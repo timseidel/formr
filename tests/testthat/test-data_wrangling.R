@@ -2,27 +2,28 @@ library(testthat)
 library(haven)
 
 test_that("reverse_labelled_values works as expected", {
-  # Test based on example from documentation
-  x <- haven::labelled(rep(1:3, each = 3), c(Bad = 1, Good = 5))
-  reversed <- reverse_labelled_values(x)
-  
-  # Check values are reversed
-  expect_equal(as.numeric(reversed[x == 1]), rep(5, 3))
-  expect_equal(as.numeric(reversed[x == 2]), rep(4, 3))
-  expect_equal(as.numeric(reversed[x == 3]), rep(3, 3))
-  
-  # Check labels are preserved correctly
-  expect_equal(attr(reversed, "labels"), c(Bad = 5, Good = 1))
+	# Test based on example from documentation
+	x <- haven::labelled(rep(1:3, each = 3), c(Bad = 1, Good = 5))
+	reversed <- reverse_labelled_values(x)
+	
+	# Check values are reversed
+	expect_equal(as.numeric(reversed[x == 1]), rep(5, 3))
+	expect_equal(as.numeric(reversed[x == 2]), rep(4, 3))
+	expect_equal(as.numeric(reversed[x == 3]), rep(3, 3))
+	
+	# Check labels are preserved correctly
+	expect_equal(attr(reversed, "labels"), c(Good = 1, Bad = 5)) 
 })
 
 test_that("reverse_labelled_values handles factors", {
-  # Test factor conversion
-  x <- factor(c("Low", "Medium", "High"), levels = c("Low", "Medium", "High"))
-  expect_warning(reversed <- reverse_labelled_values(x), 
-                "Turning a factor into a labelled numeric vector")
-  
-  # Check conversion worked correctly
-  expect_equal(as.numeric(reversed), c(3, 2, 1))
+	# Test factor conversion
+	x <- factor(c("Low", "Medium", "High"), levels = c("Low", "Medium", "High"))
+	
+	expect_warning(reversed <- reverse_labelled_values(x), 
+								 "Converting factor 'x' to numeric for reversal.")
+	
+	# Check conversion worked correctly
+	expect_equal(as.numeric(reversed), c(3, 2, 1))
 })
 
 test_that("as_same_type_as converts types correctly", {
