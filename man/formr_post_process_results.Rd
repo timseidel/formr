@@ -5,8 +5,9 @@
 \title{Process Results Wrapper}
 \usage{
 formr_post_process_results(
-  item_list,
-  results,
+  run_name = NULL,
+  item_list = NULL,
+  results = NULL,
   item_displays = NULL,
   remove_test_sessions = TRUE,
   tag_missings = !is.null(item_displays),
@@ -14,9 +15,11 @@ formr_post_process_results(
 )
 }
 \arguments{
-\item{item_list}{Metadata tibble.}
+\item{run_name}{Name of the run (string). If provided, data and structure will be fetched automatically.}
 
-\item{results}{Results tibble.}
+\item{item_list}{Metadata tibble OR a Run Structure list. Required if \code{run_name} is NULL.}
+
+\item{results}{Results tibble. Required if \code{run_name} is NULL.}
 
 \item{item_displays}{Optional display log tibble.}
 
@@ -28,12 +31,4 @@ formr_post_process_results(
 }
 \description{
 The master pipeline for cleaning data.
-Steps:
-\enumerate{
-\item Filter test sessions (optional).
-\item Apply types/attributes (\code{formr_recognise}).
-\item Reverse scored items (\code{formr_reverse}).
-\item Calculate scale means (\code{formr_aggregate}).
-\item Label missing values (optional).
-}
 }

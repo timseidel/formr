@@ -12,7 +12,7 @@ formr_files <- function(run_name) {
 	res <- formr_api_request(paste0("runs/", run_name, "/files"), method = "GET")
 	
 	if (length(res) == 0) {
-		message(sprintf("ℹ No files found for run '%s'.", run_name))
+		message(sprintf("[INFO] No files found for run '%s'.", run_name))
 		return(data.frame())
 	}
 	
@@ -45,7 +45,7 @@ formr_upload_file <- function(run_name, path) {
 	# 1. Handle Directory Input
 	# If a single path is provided and it is a directory, get all files inside
 	if (length(path) == 1 && dir.exists(path)) {
-		message(sprintf("ℹ Directory detected. Preparing to upload files from '%s'...", path))
+		message(sprintf("[INFO] Directory detected. Preparing to upload files from '%s'...", path))
 		path <- list.files(path, full.names = TRUE, recursive = FALSE)
 		
 		if (length(path) == 0) {
@@ -71,7 +71,7 @@ formr_upload_file <- function(run_name, path) {
 			body = body
 		)
 		
-		message(sprintf("✅ File '%s' uploaded successfully.", res$file))
+		message(sprintf("[SUCCESS] File '%s' uploaded successfully.", res$file))
 		return(res)
 	})
 	
@@ -93,7 +93,7 @@ formr_delete_file <- function(run_name, file_name) {
 	# If input is a directory, we assume user wants to delete files on server
 	# that match the filenames found in that local directory.
 	if (length(file_name) == 1 && dir.exists(file_name)) {
-		message(sprintf("ℹ Directory detected. Deleting files matching names in '%s'...", file_name))
+		message(sprintf("[INFO] Directory detected. Deleting files matching names in '%s'...", file_name))
 		# We only need the basename (e.g. "image.png") not the full local path
 		file_name <- basename(list.files(file_name, full.names = TRUE, recursive = FALSE))
 		
@@ -114,9 +114,9 @@ formr_delete_file <- function(run_name, file_name) {
 				endpoint = paste0("runs/", run_name, "/files/", encoded_name),
 				method = "DELETE"
 			)
-			message(sprintf("✅ File '%s' deleted.", single_name))
+			message(sprintf("[SUCCESS] File '%s' deleted.", single_name))
 		}, error = function(e) {
-			warning(sprintf("❌ Failed to delete '%s': %s", single_name, e$message))
+			warning(sprintf("[FAILED] Failed to delete '%s': %s", single_name, e$message))
 		})
 	})
 	
@@ -125,7 +125,7 @@ formr_delete_file <- function(run_name, file_name) {
 
 #' Delete ALL files attached to a run
 #'
-#' ⚠ CAUTION: This will permanently remove every file attached to the specified run.
+#' CAUTION: This will permanently remove every file attached to the specified run.
 #' It first fetches the list of existing files, then iterates through them to delete.
 #'
 #' @param run_name Name of the run.
@@ -137,7 +137,7 @@ formr_delete_all_files <- function(run_name, prompt = TRUE) {
 	files <- formr_files(run_name)
 	
 	if (nrow(files) == 0) {
-		message(sprintf("ℹ No files found in run '%s'. Nothing to delete.", run_name))
+		message(sprintf("[INFO] No files found in run '%s'. Nothing to delete.", run_name))
 		return(invisible(TRUE))
 	}
 	
@@ -146,21 +146,21 @@ formr_delete_all_files <- function(run_name, prompt = TRUE) {
 	
 	# 2. Safety Prompt
 	if (prompt) {
-		cat(sprintf("⚠ DANGER: You are about to delete %d files from run '%s'.\n", count, run_name))
+		cat(sprintf("DANGER: You are about to delete %d files from run '%s'.\n", count, run_name))
 		cat("Files: ", paste(head(file_names, 3), collapse = ", "), if(count > 3) "..." else "", "\n")
 		
 		response <- readline(prompt = "Are you sure you want to proceed? (y/n): ")
 		if (tolower(trimws(response)) != "y") {
-			message("❌ Operation cancelled.")
+			message("[FAILED] Operation cancelled.")
 			return(invisible(FALSE))
 		}
 	}
 	
 	# 3. Perform Deletion
 	# Since we updated formr_delete_file to accept vectors, we can pass the whole list.
-	message(sprintf("🚀 Starting deletion of %d files...", count))
+	message(sprintf("[START] Starting deletion of %d files...", count))
 	formr_delete_file(run_name, file_names)
 	
-	message("✅ All files have been processed.")
+	message("[SUCCESS] All files have been processed.")
 	invisible(TRUE)
 }

@@ -1,7 +1,7 @@
 http_interactions:
 - request:
-    method: GET
-    uri: http://formr-host-redacted/v1/runs/test-run/results
+    method: DELETE
+    uri: http://formr-host-redacted/v1/runs/test-run
   response:
     status: 200
     headers:

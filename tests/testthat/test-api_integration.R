@@ -41,6 +41,52 @@ test_that("formr_runs returns a valid tibble", {
 	})
 })
 
+test_that("formr_runs creates a run successfully", {
+	vcr::use_cassette("formr_runs_create", {
+		res <- formr_create_run("test-run")
+		
+		# Check res
+		expect_s3_class(res, "data.frame")
+		expect_true(res$name == "test-run")
+		
+	})
+})
+
+test_that("formr_run_structure can import (PUT) a valid JSON", {
+	vcr::use_cassette("formr_run_structure_import", {
+		
+		# 1. Setup: Create a minimal valid Run Structure JSON
+		# This represents a run with 1 survey unit
+		minimal_structure <- '{
+      "name": "test-run",
+      "units": [
+        {
+          "type": "Pause",
+          "position": 10,
+          "wait_minutes": 10
+        }
+      ]
+    }'
+		
+		tmp_json <- "test_structure.json"
+		writeLines(minimal_structure, tmp_json)
+		on.exit(unlink(tmp_json))
+		
+		# 2. Action: Import the structure (PUT request)
+		# Source: api_runs.R formr_run_structure
+		success <- formr_run_structure(run_name = "test-run", structure_json_path = tmp_json)
+		
+		expect_true(success)
+		
+		# 3. Verify: Fetch structure back to check if the Pause unit exists
+		imported <- formr_run_structure("test-run")
+		
+		# Check that we found the unit we just uploaded
+		unit_types <- sapply(imported$units, function(x) x$type)
+		expect_true("Pause" %in% unit_types)
+	})
+})
+
 test_that("formr_create_session creates a session and returns code", {
 	vcr::use_cassette("formr_create_session_basic", {
 		
@@ -146,7 +192,7 @@ test_that("formr_upload_file works (multipart request)", {
 		# Verify deletion
 		files_after <- formr_files("test-run")
 		expect_false(tmp_file %in% files_after$name)
-	})
+	}, match_requests_on = c("method", "uri"))
 })
 
 test_that("formr_survey_structure returns valid item metadata", {
@@ -175,37 +221,11 @@ test_that("formr_survey_structure returns valid item metadata", {
 	})
 })
 
-test_that("formr_run_structure can import (PUT) a valid JSON", {
-	vcr::use_cassette("formr_run_structure_import", {
+test_that("formr_runs deletes a run successfully", {
+	vcr::use_cassette("formr_runs_delete", {
+		res <- formr_delete_run("test-run", prompt = FALSE)
+		# Check res
+		expect_true(res)
 		
-		# 1. Setup: Create a minimal valid Run Structure JSON
-		# This represents a run with 1 survey unit
-		minimal_structure <- '{
-      "name": "test-run",
-      "units": [
-        {
-          "type": "Pause",
-          "position": 1,
-          "wait_minutes": 10
-        }
-      ]
-    }'
-		
-		tmp_json <- "test_structure.json"
-		writeLines(minimal_structure, tmp_json)
-		on.exit(unlink(tmp_json))
-		
-		# 2. Action: Import the structure (PUT request)
-		# Source: api_runs.R formr_run_structure
-		success <- formr_run_structure(run_name = "test-run", structure_json_path = tmp_json)
-		
-		expect_true(success)
-		
-		# 3. Verify: Fetch structure back to check if the Pause unit exists
-		imported <- formr_run_structure("test-run")
-		
-		# Check that we found the unit we just uploaded
-		unit_types <- sapply(imported$units, function(x) x$type)
-		expect_true("Pause" %in% unit_types)
 	})
 })

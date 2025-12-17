@@ -38,12 +38,16 @@ formr_recognise <- function(item_list, results) {
 		
 		name <- item$name
 		type <- item$type
-		label <- if(!is.null(item$label)) item$label else ""
 		
-		# Robust choice extraction (handles list-column nesting from tibble)
+		# HTML STRIPPING ---
+		raw_label <- if(!is.null(item$label)) item$label else ""
+		# Remove HTML tags (<...>) and trim whitespace
+		clean_label <- trimws(gsub("<[^>]+>", "", raw_label))
+		
+		# Robust choice extraction
 		choices <- NULL
 		if (!is.null(item$choices)) {
-			if (is.list(item$choices)) choices <- item$choices[[1]] # It's nested in the cell
+			if (is.list(item$choices)) choices <- item$choices[[1]] 
 			else choices <- item$choices
 		}
 		
@@ -76,13 +80,13 @@ formr_recognise <- function(item_list, results) {
 		else if (type %in% c("text", "textarea", "email")) {
 			results[[name]] <- as.character(results[[name]])
 		} else if (type %in% c("date", "datetime")) {
-			# Robust date parsing
 			results[[name]] <- tryCatch(as.POSIXct(results[[name]]), error = function(e) results[[name]])
 		} else if (type %in% c("number", "range", "calculate")) {
 			results[[name]] <- suppressWarnings(as.numeric(results[[name]]))
 		}
 		
-		attr(results[[name]], "label") <- label
+		# Apply the CLEAN label
+		attr(results[[name]], "label") <- clean_label
 		attr(results[[name]], "item_meta") <- item
 	}
 	
@@ -92,45 +96,67 @@ formr_recognise <- function(item_list, results) {
 #' Process Results Wrapper
 #' 
 #' The master pipeline for cleaning data.
-#' Steps:
-#' 1. Filter test sessions (optional).
-#' 2. Apply types/attributes (`formr_recognise`).
-#' 3. Reverse scored items (`formr_reverse`).
-#' 4. Calculate scale means (`formr_aggregate`).
-#' 5. Label missing values (optional).
 #' 
-#' @param item_list Metadata tibble.
-#' @param results Results tibble.
+#' @param run_name Name of the run (string). If provided, data and structure will be fetched automatically.
+#' @param item_list Metadata tibble OR a Run Structure list. Required if `run_name` is NULL.
+#' @param results Results tibble. Required if `run_name` is NULL.
 #' @param item_displays Optional display log tibble.
 #' @param remove_test_sessions Filter out sessions with "XXX".
 #' @param tag_missings Tag NAs if display data is present.
 #' @param fallback_max Max value for Likert reversal (default 5).
 #' @export
-formr_post_process_results <- function(item_list, results, 
+formr_post_process_results <- function(run_name = NULL,
+																			 item_list = NULL, 
+																			 results = NULL, 
 																			 item_displays = NULL,
 																			 remove_test_sessions = TRUE,
 																			 tag_missings = !is.null(item_displays),
 																			 fallback_max = 5) {
 	
-	# 1. Filter Test Sessions
+	# --- 1. EXPLICIT MODE: Fetch if run_name is provided ---
+	if (!is.null(run_name)) {
+		message("[START] Auto-mode: Fetching data and structure for run '", run_name, "'...")
+		if(is.null(results)) results <- formr_results(run_name)
+		if(is.null(item_list)) item_list <- formr_run_structure(run_name)
+	}
+	# -------------------------------------------------------
+	
+	# Validation: Ensure we have the ingredients
+	if (is.null(results)) {
+		stop("[FAILED] Missing Argument: Please provide 'results' or a 'run_name'.")
+	}
+	if (is.null(item_list)) {
+		stop("[FAILED] Missing Argument: Please provide 'item_list' or a 'run_name'.")
+	}
+	
+	# --- 2. Run Structure Handling ---
+	# If 'item_list' is a Run Structure (nested list), extract items.
+	if (is.list(item_list) && "units" %in% names(item_list)) {
+		message("[INFO] Extracting items from Run Structure...")
+		item_list <- .extract_items_from_run(item_list)
+		message(sprintf("   Found %d items across all surveys.", nrow(item_list)))
+	}
+	
+	# --- 3. Standard Pipeline ---
+	
+	# Filter Test Sessions
 	if (remove_test_sessions && "session" %in% names(results)) {
 		results <- results[!grepl("XXX", results$session), ]
-		
 		if (!is.null(item_displays) && "session" %in% names(item_displays)) {
 			item_displays <- item_displays[!grepl("XXX", item_displays$session), ]
 		}
 	}
 	
-	# 2. Type Recognition
+	# Recognition
 	results <- formr_recognise(item_list, results)
 	
-	# 3. Reverse Items
+	# Reversal
 	results <- formr_reverse(results, item_list, fallback_max)
 	
-	# 4. Aggregate Scales
+	# Aggregation
 	results <- formr_aggregate(results, item_list)
 	
-	# 5. Label Missings
+	# Missings
 	if (tag_missings && !is.null(item_displays)) {
 		results <- formr_label_missings(results, item_displays)
 	}
@@ -202,7 +228,7 @@ formr_reverse <- function(results, item_list = NULL, fallback_max = 5) {
 formr_aggregate <- function(results, item_list = NULL, min_items = 2) {
 	
 	item_names <- names(results)
-	# Regex for stems (e.g. bfi_1 -> bfi)
+	# Regex to find stems (e.g. bfi_1 -> bfi)
 	stems <- stringr::str_match(item_names, "^([a-zA-Z0-9_]+?)[_]?\\d+[R]?$")[, 2]
 	unique_stems <- unique(stats::na.omit(stems))
 	
@@ -214,25 +240,32 @@ formr_aggregate <- function(results, item_list = NULL, min_items = 2) {
 		
 		if (length(scale_cols) < min_items) next
 		
-		# CRITICAL FIX: Ensure we only aggregate NUMERIC data
-		# If it's a Factor, stop. Factors convert to 1,2,3 integers which ruins Likert scales (0,1,2,3)
+		# Only aggregate if the data is actually numeric.
+		# We must handle 'haven_labelled' specifically, as it can wrap character data too.
 		safe_cols <- vapply(results[scale_cols], function(x) {
-			is.numeric(x) || inherits(x, "haven_labelled")
+			if (is.numeric(x)) return(TRUE)
+			# If labelled, check if the *underlying* vector is numeric
+			if (inherits(x, "haven_labelled")) return(is.numeric(unclass(x)))
+			return(FALSE)
 		}, logical(1))
 		
-		if (all(safe_cols)) {
-			message(sprintf("ℹ Aggregating '%s' (%d items)", scale, length(scale_cols)))
-			
-			# Strip haven labels for math
-			mat <- as.matrix(sapply(results[scale_cols], as.numeric))
-			results[[scale]] <- rowMeans(mat, na.rm = TRUE)
-			
-			attr(results[[scale]], "scale_items") <- scale_cols
-			attr(results[[scale]], "label") <- paste(length(scale_cols), "items aggregated (mean)")
-		} else {
-			# Warn if we skipped because of types
-			warning(sprintf("Skipped aggregating '%s': Some items are not numeric/labelled.", scale))
+		# Only use the columns that passed the check
+		valid_cols <- scale_cols[safe_cols]
+		
+		# If we dropped too many columns, skip this scale
+		if (length(valid_cols) < min_items) {
+			warning(sprintf("Skipped aggregating '%s': Items contain text/non-numeric data.", scale))
+			next
 		}
+		
+		message(sprintf("[INFO] Aggregating '%s' (%d items)", scale, length(valid_cols)))
+		
+		# Strip labels safely for the math part
+		mat <- as.matrix(sapply(results[valid_cols], as.numeric))
+		results[[scale]] <- rowMeans(mat, na.rm = TRUE)
+		
+		attr(results[[scale]], "scale_items") <- valid_cols
+		attr(results[[scale]], "label") <- paste(length(valid_cols), "items aggregated (mean)")
 	}
 	results
 }

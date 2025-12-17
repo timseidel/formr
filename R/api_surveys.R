@@ -14,85 +14,94 @@ formr_surveys <- function(name_pattern = NULL) {
 	res <- formr_api_request("surveys", query = query)
 	
 	if (length(res) == 0) {
-		message("ℹ No surveys found.")
+		message("[INFO] No surveys found.")
 		return(dplyr::tibble())
 	}
 	
 	dplyr::bind_rows(res) %>% 
 		dplyr::mutate(
-			created = as.POSIXct(created),
-			modified = as.POSIXct(modified),
-			id = as.integer(id)
+			created = as.POSIXct(.data$created),
+			modified = as.POSIXct(.data$modified),
+			id = as.integer(.data$id)
 		) %>%
 		dplyr::as_tibble()
 }
 
 #' Get Survey Structure (Items)
 #' 
-#' Retrieves the item table for a survey. Handles complex nested JSON structures
-#' by converting attributes into list-columns.
+#' Retrieves the item table for a survey. Can return a tibble (JSON) or download
+#' the original Excel file (XLSX).
 #' 
 #' @param survey_name The name of the survey.
-#' @return A tibble containing the items.
-#' @importFrom dplyr bind_rows as_tibble
+#' @param format The format to retrieve: "json" (default) or "xlsx".
+#' @param file_path Optional. Required if format is "xlsx".
 #' @export
-formr_survey_structure <- function(survey_name) {
-	# 1. Fetch Data
-	# Source: ApiHelperV1.php surveys (GET /surveys/{name})
-	res <- formr_api_request(
-		endpoint = paste0("surveys/", survey_name), 
-		method = "GET"
-	)
+formr_survey_structure <- function(survey_name, format = "json", file_path = NULL) {
 	
-	# 2. Validation
+	# --- Mode: Download XLSX ---
+	if (format == "xlsx") {
+		if (is.null(file_path)) stop("You must provide a 'file_path' when format is 'xlsx'.")
+		
+		# 1. Get Session (Using your existing API core)
+		session <- formr_api_session()
+		if (is.null(session)) stop("Not authenticated. Run formr_api_authenticate() first.")
+		
+		# 2. Construct URL (mimicking formr_api_request logic)
+		url <- session$base_url
+		# Append path: /v1/surveys/{name}
+		# We assume api_version is v1 as per your core code
+		url$path <- paste0(url$path, "/v1/surveys/", survey_name)
+		url$path <- gsub("//", "/", url$path) # Clean up double slashes
+		
+		tryCatch({
+			# 3. Direct HTTR call to save binary file
+			res <- httr::GET(
+				url, # httr accepts the list object directly
+				query = list(format = "xlsx"),
+				httr::add_headers(Authorization = paste("Bearer", session$token)),
+				httr::write_disk(file_path, overwrite = TRUE)
+			)
+			
+			# 4. Check for API Errors (e.g. 404, 403)
+			if (httr::status_code(res) >= 400) {
+				if(file.exists(file_path)) file.remove(file_path) # Delete empty/error file
+				# Try to read error message if possible
+				err_msg <- tryCatch(httr::content(res, "text", encoding="UTF-8"), error=function(e) "Unknown error")
+				stop(sprintf("API Error (%s): %s", httr::status_code(res), substr(err_msg, 1, 100)))
+			}
+			
+			message(sprintf("   - Downloaded: %s", basename(file_path)))
+			return(invisible(file_path))
+			
+		}, error = function(e) {
+			# Clean up file if download crashed halfway
+			if(file.exists(file_path) && file.info(file_path)$size == 0) file.remove(file_path)
+			warning(sprintf("Failed to download XLSX for '%s': %s", survey_name, e$message))
+			return(NULL)
+		})
+	}
+	
+	# --- Mode: Fetch JSON (Your existing logic) ---
+	res <- formr_api_request(endpoint = paste0("surveys/", survey_name), method = "GET")
+	
 	if (is.null(res$items) || length(res$items) == 0) {
-		warning(sprintf("⚠️ Survey '%s' exists but has no items.", survey_name))
+		warning(sprintf("[WARNING] Survey '%s' exists but has no items.", survey_name))
 		return(dplyr::tibble())
 	}
 	
-	# 3. Helper to clean a single item
-	# This prevents "row explosion" by wrapping vectors/lists in a list()
 	process_item <- function(x) {
-		
-		# List of fields that are known to be nested or vector-heavy
-		# We must wrap these in list() so they occupy 1 cell in the table
-		complex_fields <- c(
-			"input_attributes", 
-			"parent_attributes", 
-			"allowed_classes", 
-			"choices", 
-			"val_errors", 
-			"val_warnings"
-		)
-		
+		complex_fields <- c("input_attributes", "parent_attributes", "allowed_classes", "choices", "val_errors", "val_warnings")
 		for (field in complex_fields) {
-			if (!is.null(x[[field]])) {
-				x[[field]] <- list(x[[field]])
-			} else {
-				x[[field]] <- list(NULL) # Ensure column exists as list-column
-			}
+			if (!is.null(x[[field]])) x[[field]] <- list(x[[field]]) else x[[field]] <- list(NULL) 
 		}
-		
-		# Convert NULLs to NAs (scalars only) to keep tibble happy
-		x <- lapply(x, function(val) {
-			if (is.null(val)) return(NA)
-			return(val)
-		})
-		
+		if (!is.null(x$value)) x$value <- as.character(x$value)
+		x <- lapply(x, function(val) if (is.null(val)) NA else val)
 		return(tibble::as_tibble(x))
 	}
 	
-	# 4. Iterate and Bind
-	# res$items is a named list. We remove names to avoid row-name issues.
 	item_list <- unname(res$items)
-	
-	# Process each item individually
 	clean_list <- lapply(item_list, process_item)
-	
-	# Combine
-	df <- dplyr::bind_rows(clean_list)
-	
-	return(df)
+	return(dplyr::bind_rows(clean_list))
 }
 
 #' Upload/Update Survey
@@ -108,7 +117,7 @@ formr_upload_survey <- function(file_path = NULL, survey_name = NULL, google_she
 	if (is.null(survey_name)) {
 		if (!is.null(file_path)) {
 			survey_name <- tools::file_path_sans_ext(basename(file_path))
-			message(sprintf("ℹ Name not provided. Defaulting survey_name to '%s'", survey_name))
+			message(sprintf("[INFO] Name not provided. Defaulting survey_name to '%s'", survey_name))
 		} else {
 			stop("You must provide 'survey_name' if you are not providing a local 'file_path'.")
 		}
@@ -133,14 +142,49 @@ formr_upload_survey <- function(file_path = NULL, survey_name = NULL, google_she
 		encode = if (!is.null(file_path)) "multipart" else "json"
 	)
 	
-	message(sprintf("✅ Survey '%s' processed successfully.", res$name))
+	message(sprintf("[SUCCESS] Survey '%s' processed successfully.", res$name))
 	
 	if (!is.null(res$logs) && length(res$logs) > 0) {
-		cat("\n📋 Server Logs:\n")
+		cat("\n[INFO] Server Logs:\n")
 		logs <- unlist(res$logs)
 		clean_logs <- gsub("<[^>]+>", "", logs)
-		cat(paste0("  • ", clean_logs, collapse = "\n"), "\n")
+		cat(paste0("...", clean_logs, collapse = "\n"), "\n")
 	}
 	
 	invisible(res)
+}
+
+#' Delete a Survey
+#'
+#' Permanently deletes a survey study.
+#' Note: The API may prevent deletion if this survey is currently used in an active run.
+#'
+#' @param survey_name Name of the survey to delete.
+#' @param prompt Logical. If TRUE (default), asks for interactive confirmation.
+#' @return Invisibly returns TRUE on success.
+#' @export
+formr_delete_survey <- function(survey_name, prompt = TRUE) {
+	
+	if (prompt) {
+		cat(sprintf("\n[WARNING]  WARNING: You are about to delete the survey '%s'.\n", survey_name))
+		
+		response <- readline(prompt = "   Are you sure you want to proceed? (y/n): ")
+		if (tolower(trimws(response)) != "y") {
+			message("[FAILED] Operation cancelled.")
+			return(invisible(FALSE))
+		}
+	}
+	
+	tryCatch({
+		# DELETE /surveys/{survey_name}
+		formr_api_request(
+			endpoint = paste0("surveys/", survey_name), 
+			method = "DELETE"
+		)
+		message(sprintf("[SUCCESS] Survey '%s' deleted successfully.", survey_name))
+		return(invisible(TRUE))
+		
+	}, error = function(e) {
+		stop(sprintf("Failed to delete survey '%s': %s", survey_name, e$message))
+	})
 }

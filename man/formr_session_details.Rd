@@ -2,19 +2,16 @@
 % Please edit documentation in R/api_sessions.R
 \name{formr_session_details}
 \alias{formr_session_details}
-\title{Get Session Details (Vectorized & Tidy)}
+\title{Get details for specific sessions (Helper)}
 \usage{
 formr_session_details(run_name, session_codes)
 }
 \arguments{
-\item{run_name}{Name of the run.}
+\item{run_name}{Name of the run}
 
-\item{session_codes}{A single code or a vector of session IDs/codes.}
-}
-\value{
-A tibble containing session details.
+\item{session_codes}{Vector of session IDs}
 }
 \description{
-Retrieves detailed state for one or more sessions.
-Returns a tidy tibble with flattened unit information.
+Fetches detailed state for a list of session codes.
+Handles schema mismatches and missing data robustly.
 }

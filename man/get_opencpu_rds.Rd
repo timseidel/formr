@@ -6,6 +6,11 @@
 \usage{
 get_opencpu_rds(session_url, local = TRUE)
 }
+\arguments{
+\item{session_url}{The OpenCPU session URL.}
+
+\item{local}{Logical. Read from local temp dir?}
+}
 \description{
 Get OpenCPU RDS
 }

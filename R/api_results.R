@@ -29,7 +29,7 @@ formr_results <- function(run_name, surveys = NULL, session_ids = NULL, item_nam
 	)
 	
 	if (length(res) == 0) {
-		message("ℹ No results found.")
+		message("[INFO] No results found.")
 		return(dplyr::tibble(session = character()))
 	}
 	
@@ -48,7 +48,7 @@ formr_results <- function(run_name, surveys = NULL, session_ids = NULL, item_nam
 	
 	# 5. Handle Join Logic
 	if (join && length(results_list) > 1) {
-		message("🔗 Joining surveys by 'session'...")
+		message(" Joining surveys by 'session'...")
 		
 		# Pre-processing: Rename columns to {column}_{survey_name}
 		# This avoids the .x .y .x.x mess entirely

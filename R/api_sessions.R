@@ -1,39 +1,63 @@
 #' List Sessions in a Run
 #' 
-#' Returns a paginated, tidy data frame of sessions.
+#' Returns a tidy data frame of sessions. Automatically enriches active sessions 
+#' with detailed data (like unit_id, user_id) while keeping the list fast for empty sessions.
 #' 
 #' @param run_name Name of the run.
 #' @param active Filter: TRUE for ongoing, FALSE for finished, NULL for all.
 #' @param testing Filter: TRUE for test sessions, FALSE for real users, NULL for all.
 #' @param limit Pagination limit (default 100).
 #' @param offset Pagination offset (default 0).
-#' @return A data.frame containing session details (code, position, last_access, etc.).
-#' @importFrom dplyr bind_rows mutate
+#' @param detailed Logical. If TRUE (default), fetches extra details for active users.
+#' @return A combined tibble of session states and details.
+#' @importFrom dplyr bind_rows mutate left_join select distinct
 #' @export
-formr_sessions <- function(run_name, active = NULL, testing = NULL, limit = 100, offset = 0) {
-	# Prepare query parameters
-	query <- list(limit = limit, offset = offset)
+formr_sessions <- function(run_name, active = NULL, testing = NULL, limit = 1000, offset = 0, detailed = TRUE) {
 	
-	# Map active (TRUE/FALSE) to API strings ("true"/"false") or 1/0
-	# Source: ApiHelperV1.php listSessions
+	# 1. Fetch the Basic List (The "Phonebook")
+	query <- list(limit = limit, offset = offset)
 	if (!is.null(active)) query$active <- if(active) 1 else 0
 	if (!is.null(testing)) query$testing <- if(testing) 1 else 0
 	
 	res <- formr_api_request(paste0("runs/", run_name, "/sessions"), query = query)
 	
 	if (length(res) == 0) {
-		message(sprintf("ℹ No sessions found for run '%s'.", run_name))
-		return(data.frame())
+		message(sprintf("[INFO] No sessions found for run '%s'.", run_name))
+		return(dplyr::tibble())
 	}
 	
-	# Convert to tidy data frame
-	dplyr::bind_rows(res) %>%
+	# Basic Tidy Table
+	list_df <- dplyr::bind_rows(res) %>%
 		dplyr::mutate(
 			created = as.POSIXct(.data$created),
 			last_access = as.POSIXct(.data$last_access),
 			ended = as.POSIXct(.data$ended),
-			testing = as.logical(.data$testing)
+			testing = as.logical(.data$testing),
+			position = as.integer(.data$position)
 		)
+	
+	# If we don't want details, or there are no active users, return early
+	if (!detailed || nrow(list_df) == 0) return(list_df)
+	
+	# 3. Fetch Details (The "Dossier")
+	message(sprintf(" Fetching details for %d active participants...", nrow(list_df)))
+	details_df <- formr_session_details(run_name, list_df$session)
+	
+	if (nrow(details_df) == 0) return(list_df)
+	
+	# 4. Smart Merge
+	
+	new_cols <- setdiff(names(details_df), names(list_df))
+	# Always keep 'session' for the join
+	cols_to_merge <- c("session", new_cols)
+	
+	final_df <- list_df %>%
+		dplyr::left_join(
+			details_df %>% dplyr::select(dplyr::all_of(cols_to_merge)), 
+			by = "session"
+		)
+	
+	return(final_df)
 }
 
 #' Create Session(s)
@@ -67,7 +91,7 @@ formr_create_session <- function(run_name, codes = NULL, testing = FALSE) {
 	count_failed <- if(!is.null(res$count_failed)) res$count_failed else 0
 	
 	if (count_created > 0) {
-		message(sprintf("✅ Successfully created %d session(s).", count_created))
+		message(sprintf("[SUCCESS] Successfully created %d session(s).", count_created))
 		# Print the first few created codes
 		if(length(res$sessions) > 0) {
 			shown <- head(res$sessions, 5)
@@ -78,7 +102,7 @@ formr_create_session <- function(run_name, codes = NULL, testing = FALSE) {
 	}
 	
 	if (count_failed > 0) {
-		warning(sprintf("⚠️ Failed to create %d session(s).", count_failed))
+		warning(sprintf("[WARNING] Failed to create %d session(s).", count_failed))
 		# Print the errors
 		if(!is.null(res$errors)) {
 			err_df <- dplyr::bind_rows(res$errors)
@@ -126,7 +150,7 @@ formr_session_action <- function(run_name, session_codes, action, position = NUL
 			return(TRUE)
 			
 		}, error = function(e) {
-			warning(sprintf("⚠️ Failed to perform action on '%s': %s", code, e$message))
+			warning(sprintf("[WARNING] Failed to perform action on '%s': %s", code, e$message))
 			return(FALSE)
 		})
 	}
@@ -140,93 +164,73 @@ formr_session_action <- function(run_name, session_codes, action, position = NUL
 	total_count <- length(session_codes)
 	
 	if (success_count == total_count) {
-		message(sprintf("✅ Action '%s' successfully performed on all %d session(s).", action, total_count))
+		message(sprintf("[SUCCESS] Action '%s' successfully performed on all %d session(s).", action, total_count))
 	} else if (success_count > 0) {
-		message(sprintf("ℹ️ Action '%s' performed on %d/%d session(s). (See warnings for failures)", action, success_count, total_count))
+		message(sprintf("[INFO] Action '%s' performed on %d/%d session(s). (See warnings for failures)", action, success_count, total_count))
 	} else {
-		warning(sprintf("❌ Action '%s' failed for all %d session(s).", action, total_count))
+		warning(sprintf("[FAILED] Action '%s' failed for all %d session(s).", action, total_count))
 	}
 	
 	invisible(results)
 }
 
-#' Get Session Details (Vectorized & Tidy)
+#' Get details for specific sessions (Helper)
 #' 
-#' Retrieves detailed state for one or more sessions.
-#' Returns a tidy tibble with flattened unit information.
+#' Fetches detailed state for a list of session codes.
+#' Handles schema mismatches and missing data robustly.
 #' 
-#' @param run_name Name of the run.
-#' @param session_codes A single code or a vector of session IDs/codes.
-#' @return A tibble containing session details.
-#' @importFrom dplyr bind_rows mutate as_tibble
+#' @param run_name Name of the run
+#' @param session_codes Vector of session IDs
 #' @export
 formr_session_details <- function(run_name, session_codes) {
 	
-	# Internal helper to fetch a single session
 	fetch_one <- function(code) {
 		tryCatch({
-			# 1. Call API
-			# Source: ApiHelperV1.php handleSessions -> getSessionDetails
 			res <- formr_api_request(
-				endpoint = paste0("runs/", run_name, "/sessions/", code),
+				endpoint = paste0("runs/", run_name, "/sessions/", code), 
 				method = "GET"
 			)
 			
-			# 2. Extract Nested "current_unit" Info
-			# Source: ApiHelperV1.php getSessionDetails adds 'current_unit' array
-			unit_info <- list(
-				unit_id = NA_integer_,
-				unit_type = NA_character_,
-				unit_description = NA_character_,
-				unit_session_id = NA_integer_
-			)
+			if (!is.list(res)) return(NULL)
 			
-			if (!is.null(res$current_unit)) {
-				unit_info$unit_id <- as.integer(res$current_unit$id)
-				unit_info$unit_type <- as.character(res$current_unit$type)
-				unit_info$unit_description <- as.character(res$current_unit$description)
-				unit_info$unit_session_id <- as.integer(res$current_unit$session_id)
-				res$current_unit <- NULL # Remove nested list to allow flattening
-			}
+			# --- ROBUST NORMALIZATION ---
+			# Ensures every field has exactly Length 1
+			res_safe <- lapply(res, function(x) {
+				# Case 1: Handle NULLs/Empty (force to NA)
+				if (is.null(x) || length(x) == 0) return(NA)
+				
+				# Case 2: Handle Nested Lists (wrap in list() to keep as one object)
+				# This fixes 'current_unit' breaking the table
+				if (is.list(x) || length(x) > 1) return(list(x))
+				
+				# Case 3: Standard atomic values
+				return(x)
+			})
 			
-			# 3. Clean NULLs (Convert to NA)
-			# Iterate over remaining fields; if NULL, set to NA
-			res_clean <- lapply(res, function(x) if (is.null(x)) NA else x)
-			
-			# 4. Combine session data with unit data
-			combined <- c(res_clean, unit_info)
-			as.data.frame(combined, stringsAsFactors = FALSE)
+			# Use tibble::as_tibble, it handles list-columns better than as.data.frame
+			dplyr::as_tibble(res_safe)
 			
 		}, error = function(e) {
-			warning(sprintf("⚠️ Failed to fetch session '%s': %s", code, e$message))
+			# Use paste0 for safer error printing
+			safe_msg <- paste0("[WARNING] Failed to fetch details for '", code, "': ", e$message)
+			warning(safe_msg, call. = FALSE)
 			return(NULL)
 		})
 	}
 	
-	# Loop over codes (handling single or multiple inputs)
+	# Run loop
 	results_list <- lapply(session_codes, fetch_one)
-	
-	# Bind into a single data frame
 	df <- dplyr::bind_rows(results_list)
 	
-	if (nrow(df) == 0) {
-		return(dplyr::tibble())
-	}
+	if (nrow(df) == 0) return(dplyr::tibble())
 	
-	# 5. Type Conversion (Make it tidy)
-	# Timestamps coming from API are strings or NAs
-	df <- df %>%
-		dplyr::mutate(
-			created = as.POSIXct(created),
-			ended = as.POSIXct(ended),
-			last_access = as.POSIXct(last_access),
-			# Convert integers/logicals safely
-			id = as.integer(id),
-			position = as.integer(position),
-			testing = as.logical(testing),
-			deactivated = as.logical(deactivated)
-		) %>%
-		dplyr::as_tibble()
+	# Standardize types
+	# Note: We must check if columns exist because API might omit them
+	if ("created" %in% names(df)) df$created <- as.POSIXct(df$created)
+	if ("ended" %in% names(df)) df$ended <- as.POSIXct(df$ended)
+	if ("last_access" %in% names(df)) df$last_access <- as.POSIXct(df$last_access)
+	if ("id" %in% names(df)) df$id <- as.integer(df$id)
+	if ("position" %in% names(df)) df$position <- as.integer(df$position)
 	
 	return(df)
 }

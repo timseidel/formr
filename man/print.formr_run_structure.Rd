@@ -6,6 +6,11 @@
 \usage{
 \method{print}{formr_run_structure}(x, ...)
 }
+\arguments{
+\item{x}{The object.}
+
+\item{...}{Additional arguments.}
+}
 \description{
 Print method for formr run structure
 }

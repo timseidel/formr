@@ -12,3 +12,10 @@ graph_run
 ^codecov\.yml$
 .lintr
 .DS_Store
+^node_modules$
+.repomixignore
+repomix.config.json
+^TEMP_TESTING\.R$
+^formr-R-package-codebase\.xml$
+^package-lock\.json$
+^package\.json$

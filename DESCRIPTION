@@ -22,7 +22,6 @@ Imports:
 		scales,
 		haven,
 		stringr,
-		tidyr,
 		knitr,
 		httr,
 		curl,
@@ -30,7 +29,11 @@ Imports:
 		lubridate,
 		commonmark,
 		rmarkdown,
-		keyring
+		keyring,
+		purrr,
+		readr,
+		rlang,
+		tibble
 License: MIT + file LICENSE
 LazyData: true
 Date: 2014-12-09 12:06:54

@@ -40,8 +40,8 @@ formr_create_run <- function(name) {
 		res <- formr_api_request(paste0("runs/", single_name), method = "POST", api_version = "v1")
 		
 		# User-friendly feedback
-		message(sprintf("✅ Success! Run '%s' created.", res$name))
-		message(sprintf("🔗 Link: %s", res$link))
+		message(sprintf("[SUCCESS] Success! Run '%s' created.", res$name))
+		message(sprintf(" Link: %s", res$link))
 		
 		return(res)
 	}
@@ -92,7 +92,7 @@ formr_run_settings <- function(run_name, settings = NULL) {
 		} else {
 			# PATCH: Update settings
 			formr_api_request(paste0("runs/", single_name), method = "PATCH", body = settings, api_version = "v1")
-			message(sprintf("✅ Settings updated successfully for run '%s'.", single_name))
+			message(sprintf("[SUCCESS] Settings updated successfully for run '%s'.", single_name))
 			return(NULL)
 		}
 	}
@@ -150,7 +150,7 @@ formr_run_structure <- function(run_name, structure_json_path = NULL, file = NUL
 			encode = "raw"
 		)
 		
-		message("✅ Structure imported successfully.")
+		message("[SUCCESS] Structure imported successfully.")
 		return(invisible(TRUE))
 	}
 	
@@ -172,7 +172,7 @@ formr_run_structure <- function(run_name, structure_json_path = NULL, file = NUL
 		
 		# Write raw content directly to file
 		writeBin(httr::content(response, "raw"), file)
-		message(sprintf("✅ Backup saved to: %s", file))
+		message(sprintf("[SUCCESS] Backup saved to: %s", file))
 		return(invisible(file))
 	}
 	
@@ -187,10 +187,14 @@ formr_run_structure <- function(run_name, structure_json_path = NULL, file = NUL
 	return(res)
 }
 
+
+
 #' Print method for formr run structure
+#' @param x The object.
+#' @param ... Additional arguments.
 #' @export
 print.formr_run_structure <- function(x, ...) {
-	cat(sprintf("🏃 Run Structure: %s\n", x$name))
+	cat(sprintf(" Run Structure: %s\n", x$name))
 	cat(sprintf("   (Total Units: %d)\n\n", length(x$units)))
 	
 	if (length(x$units) == 0) {
@@ -219,6 +223,8 @@ print.formr_run_structure <- function(x, ...) {
 }
 
 #' Convert formr run structure to data.frame
+#' @param x The object.
+#' @param ... Additional arguments.
 #' @export
 as.data.frame.formr_run_structure <- function(x, ...) {
 	if (length(x$units) == 0) return(data.frame())
@@ -252,4 +258,40 @@ as.data.frame.formr_run_structure <- function(x, ...) {
 	})) -> df
 	
 	df[order(df$position), ]
+}
+
+#' Delete a Run
+#'
+#' Permanently deletes a run and all associated data (sessions, results).
+#'
+#' @param run_name Name of the run to delete.
+#' @param prompt Logical. If TRUE (default), asks for interactive confirmation.
+#' @return Invisibly returns TRUE on success.
+#' @export
+formr_delete_run <- function(run_name, prompt = TRUE) {
+	
+	if (prompt) {
+		cat(sprintf("\n DANGER: You are about to permanently delete the run '%s'.\n", run_name))
+		cat("   This includes ALL structure and attached files.\n")
+		cat("   This action cannot be undone.\n")
+		
+		response <- readline(prompt = "   Are you sure you want to proceed? (y/n): ")
+		if (tolower(trimws(response)) != "y") {
+			message("[FAILED] Operation cancelled.")
+			return(invisible(FALSE))
+		}
+	}
+	
+	tryCatch({
+		# DELETE /runs/{run_name}
+		formr_api_request(
+			endpoint = paste0("runs/", run_name), 
+			method = "DELETE"
+		)
+		message(sprintf("[SUCCESS] Run '%s' deleted successfully.", run_name))
+		return(invisible(TRUE))
+		
+	}, error = function(e) {
+		stop(sprintf("Failed to delete run '%s': %s", run_name, e$message))
+	})
 }

@@ -34,7 +34,7 @@ formr_store_keys <- function(host = "https://formr.org",
 		keyring::key_set_with_value(service = service_name,
 																username = "access_token",
 																password = access_token)
-		message("✅ Access Token stored for ", host)
+		message("[SUCCESS] Access Token stored for ", host)
 	} else if (!is.null(client_id) && !is.null(client_secret)) {
 		keyring::key_set_with_value(service = service_name,
 																username = "client_id",
@@ -42,7 +42,7 @@ formr_store_keys <- function(host = "https://formr.org",
 		keyring::key_set_with_value(service = service_name,
 																username = "client_secret",
 																password = client_secret)
-		message("✅ OAuth Credentials stored for ", host)
+		message("[SUCCESS] OAuth Credentials stored for ", host)
 	} else {
 		stop("Please provide either (client_id + client_secret) OR access_token.")
 	}
@@ -87,7 +87,7 @@ formr_api_authenticate <- function(host = "https://formr.org",
 		# Verify
 		tryCatch({
 			formr_api_request("user/me", method = "GET")
-			message("✅ Authenticated via Access Token.")
+			message("[SUCCESS] Authenticated via Access Token.")
 		}, error = function(e) {
 			warning("Authentication failed: ", e$message)
 		})
@@ -114,7 +114,7 @@ formr_api_authenticate <- function(host = "https://formr.org",
 		session_data <- list(base_url = httr::parse_url(host), token = token)
 		assign("session", session_data, envir = .formr_state)
 		
-		message("✅ Authenticated via OAuth.")
+		message("[SUCCESS] Authenticated via OAuth.")
 		
 	} else {
 		stop("No credentials found. Use formr_store_keys() or provide arguments.")

@@ -110,7 +110,7 @@ aggregate_and_document_scale <- function(items, fun = rowMeans, stem = NULL) {
 		if (length(item_names) > 1) {
 			# Simple heuristic: compare first and last item names
 			# (Robust enough for typical item naming conventions)
-			common <- tryCatch({
+			stem <- tryCatch({
 				# Find longest common substring of first two items
 				# Then trim trailing numbers/underscores
 				s1 <- item_names[1]

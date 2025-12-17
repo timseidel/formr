@@ -8,8 +8,9 @@ formr_sessions(
   run_name,
   active = NULL,
   testing = NULL,
-  limit = 100,
-  offset = 0
+  limit = 1000,
+  offset = 0,
+  detailed = TRUE
 )
 }
 \arguments{
@@ -22,10 +23,13 @@ formr_sessions(
 \item{limit}{Pagination limit (default 100).}
 
 \item{offset}{Pagination offset (default 0).}
+
+\item{detailed}{Logical. If TRUE (default), fetches extra details for active users.}
 }
 \value{
-A data.frame containing session details (code, position, last_access, etc.).
+A combined tibble of session states and details.
 }
 \description{
-Returns a paginated, tidy data frame of sessions.
+Returns a tidy data frame of sessions. Automatically enriches active sessions
+with detailed data (like unit_id, user_id) while keeping the list fast for empty sessions.
 }

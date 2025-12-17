@@ -4,15 +4,16 @@
 \alias{formr_survey_structure}
 \title{Get Survey Structure (Items)}
 \usage{
-formr_survey_structure(survey_name)
+formr_survey_structure(survey_name, format = "json", file_path = NULL)
 }
 \arguments{
 \item{survey_name}{The name of the survey.}
-}
-\value{
-A tibble containing the items.
+
+\item{format}{The format to retrieve: "json" (default) or "xlsx".}
+
+\item{file_path}{Optional. Required if format is "xlsx".}
 }
 \description{
-Retrieves the item table for a survey. Handles complex nested JSON structures
-by converting attributes into list-columns.
+Retrieves the item table for a survey. Can return a tibble (JSON) or download
+the original Excel file (XLSX).
 }

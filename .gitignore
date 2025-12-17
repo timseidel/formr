@@ -11,3 +11,5 @@ formr-R-package-codebase.xml
 .repomixignore
 repomix.config.json
 .Renviron
+TEMP_TESTING.R
+.DS_Store

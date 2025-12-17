@@ -129,6 +129,8 @@ email_image <- function(x, ext = ".png") {
 }
 
 #' Get OpenCPU RDS
+#' @param session_url The OpenCPU session URL.
+#' @param local Logical. Read from local temp dir?
 #' @export
 get_opencpu_rds = function(session_url, local = TRUE) {
 	if (local) {
@@ -143,4 +145,46 @@ get_opencpu_rds = function(session_url, local = TRUE) {
 		}
 	} 
 	readRDS(gzcon(curl::curl(session_url)))
+}
+
+#' Internal Helper: Extract and Clean Items from Run Structure
+#' @noRd
+.extract_items_from_run <- function(run_struct) {
+	all_items <- list()
+	
+	# Loop through all units in the run
+	for (unit in run_struct$units) {
+		# We only care about units of type "Survey" that have data
+		if (identical(unit$type, "Survey") && !is.null(unit$survey_data$items)) {
+			
+			# Process each item in this survey
+			survey_items_cleaned <- lapply(unit$survey_data$items, function(x) {
+				# Ensure 'choices' and other complex fields are wrapped as lists
+				# (This matches the logic in formr_survey_structure)
+				complex_fields <- c("input_attributes", "parent_attributes", "allowed_classes", "choices", "val_errors", "val_warnings")
+				for (field in complex_fields) {
+					if (!is.null(x[[field]])) {
+						x[[field]] <- list(x[[field]]) 
+					} else {
+						x[[field]] <- list(NULL)
+					}
+				}
+				
+				# Replace NULLs with NAs for simple fields to allow binding
+				x <- lapply(x, function(val) if (is.null(val)) NA else val)
+				return(tibble::as_tibble(x))
+			})
+			
+			# Add to our master list
+			all_items <- c(all_items, survey_items_cleaned)
+		}
+	}
+	
+	if (length(all_items) == 0) {
+		warning("No items found in the provided Run Structure.")
+		return(tibble::tibble())
+	}
+	
+	# Combine into one big metadata table
+	dplyr::bind_rows(all_items)
 }

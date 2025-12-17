@@ -13,6 +13,6 @@ formr_delete_all_files(run_name, prompt = TRUE)
 before deleting. Set to FALSE for automated scripts (use with care).}
 }
 \description{
-⚠ CAUTION: This will permanently remove every file attached to the specified run.
+CAUTION: This will permanently remove every file attached to the specified run.
 It first fetches the list of existing files, then iterates through them to delete.
 }

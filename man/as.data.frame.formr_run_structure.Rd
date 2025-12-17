@@ -6,6 +6,11 @@
 \usage{
 \method{as.data.frame}{formr_run_structure}(x, ...)
 }
+\arguments{
+\item{x}{The object.}
+
+\item{...}{Additional arguments.}
+}
 \description{
 Convert formr run structure to data.frame
 }

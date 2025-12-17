@@ -5,7 +5,7 @@ http_interactions:
   response:
     status: 200
     headers:
-      date: Tue, 16 Dec 2025 12:56:18 GMT
+      date: Wed, 17 Dec 2025 17:46:21 GMT
       server: Apache/2.4.65 (Debian)
       x-powered-by: PHP/8.2.2
       expires: Thu, 19 Nov 1981 08:52:00 GMT
@@ -14,25 +14,23 @@ http_interactions:
       vary: Accept-Encoding
       content-encoding: gzip
       access-control-allow-origin: ocpu.rforms.org
-      content-length: '495'
+      content-length: '463'
       connection: close
       content-type: application/json
     body:
       string: '[{"id":2,"name":"auto-submit","title":"Comprehensive Study Title Update","public":1,"cron_active":1,"locked":0,"created":"2025-09-29
-        13:54:11","modified":"2025-12-07 23:58:20"},{"id":3,"name":"EMI","title":"EMI","public":3,"cron_active":1,"locked":0,"created":"2025-09-29
-        14:59:33","modified":"2025-12-15 22:27:21"},{"id":4,"name":"test2","title":"test2","public":2,"cron_active":1,"locked":0,"created":"2025-10-08
-        22:49:04","modified":"2025-10-13 20:47:12"},{"id":5,"name":"test3","title":"test3","public":0,"cron_active":1,"locked":0,"created":"2025-10-30
-        21:49:42","modified":"2025-10-30 21:50:16"},{"id":52,"name":"katjas-run","title":"katjas-run","public":0,"cron_active":1,"locked":0,"created":"2025-12-11
+        13:54:11","modified":"2025-12-07 23:58:20"},{"id":3,"name":"EMI","title":"EMI","public":2,"cron_active":1,"locked":1,"created":"2025-09-29
+        14:59:33","modified":"2025-12-17 14:18:46"},{"id":4,"name":"test2","title":"test2","public":2,"cron_active":1,"locked":0,"created":"2025-10-08
+        22:49:04","modified":"2025-10-13 20:47:12"},{"id":52,"name":"katjas-run","title":"katjas-run","public":0,"cron_active":1,"locked":0,"created":"2025-12-11
         15:03:42","modified":"2025-12-11 15:03:42"},{"id":102,"name":"test-all-units","title":"test-all-units","public":0,"cron_active":1,"locked":0,"created":"2025-12-14
         18:56:09","modified":"2025-12-14 18:56:09"},{"id":125,"name":"HEOP","title":"HEOP","public":0,"cron_active":1,"locked":0,"created":"2025-12-15
         14:03:26","modified":"2025-12-15 14:03:26"},{"id":126,"name":"HEOPP","title":"HEOPP","public":0,"cron_active":1,"locked":0,"created":"2025-12-15
         14:03:43","modified":"2025-12-15 14:03:43"},{"id":127,"name":"HEOPPL","title":"HEOPPL","public":0,"cron_active":1,"locked":0,"created":"2025-12-15
-        14:05:33","modified":"2025-12-15 14:05:33"},{"id":128,"name":"HEOPPL2","title":"HEOPPL2","public":0,"cron_active":1,"locked":0,"created":"2025-12-15
-        14:07:03","modified":"2025-12-15 14:07:03"},{"id":129,"name":"HEOPPL23","title":"HEOPPL23","public":0,"cron_active":1,"locked":0,"created":"2025-12-15
+        14:05:33","modified":"2025-12-15 14:05:33"},{"id":129,"name":"HEOPPL23","title":"HEOPPL23","public":0,"cron_active":1,"locked":0,"created":"2025-12-15
         14:07:21","modified":"2025-12-15 14:07:21"},{"id":130,"name":"HEOPPL233","title":"HEOPPL233","public":0,"cron_active":1,"locked":0,"created":"2025-12-15
         14:13:50","modified":"2025-12-15 14:13:50"},{"id":131,"name":"usihsu","title":"usihsu","public":0,"cron_active":1,"locked":0,"created":"2025-12-15
-        14:13:50","modified":"2025-12-15 14:13:50"},{"id":138,"name":"api-test","title":"api-test","public":0,"cron_active":1,"locked":0,"created":"2025-12-15
-        22:45:34","modified":"2025-12-15 23:28:06"},{"id":139,"name":"test-run","title":"test-run","public":0,"cron_active":1,"locked":0,"created":"2025-12-16
-        13:40:24","modified":"2025-12-16 13:40:24"}]'
-  recorded_at: 2025-12-16 12:56:18
+        14:13:50","modified":"2025-12-15 14:13:50"},{"id":143,"name":"api-test","title":"api-test","public":0,"cron_active":1,"locked":0,"created":"2025-12-17
+        15:19:11","modified":"2025-12-17 15:19:11"},{"id":144,"name":"hjfwerhwjh","title":"hjfwerhwjh","public":0,"cron_active":1,"locked":0,"created":"2025-12-17
+        17:20:39","modified":"2025-12-17 17:20:39"}]'
+  recorded_at: 2025-12-17 17:46:21
 recorded_with: VCR-vcr/2.1.0

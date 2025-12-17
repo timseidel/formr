@@ -7,10 +7,10 @@ http_interactions:
   response:
     status: 200
     headers:
-      date: Tue, 16 Dec 2025 12:56:18 GMT
+      date: Wed, 17 Dec 2025 17:46:21 GMT
       server: Apache/2.4.65 (Debian)
       x-powered-by: PHP/8.2.2
-      set-cookie: formr_session=4c83334f6ade5edeacf008825a00fe09; path=/; HttpOnly;
+      set-cookie: formr_session=f9d0bd0bfd0227993faea1f7e3c11fc5; path=/; HttpOnly;
         SameSite=Lax
       expires: Thu, 19 Nov 1981 08:52:00 GMT
       cache-control: no-store
@@ -18,11 +18,11 @@ http_interactions:
       vary: Accept-Encoding
       content-encoding: gzip
       access-control-allow-origin: ocpu.rforms.org
-      content-length: '165'
+      content-length: '167'
       content-type: application/json
     body:
-      string: '{"access_token":"ed9ff3ac1e52b8c4a94e4a1d1631077a119c9c7a","expires_in":3600,"token_type":"Bearer","scope":"user:read
+      string: '{"access_token":"a1f1ef5d5b99bfd25d07a43acc8d241382cc6b6b","expires_in":3600,"token_type":"Bearer","scope":"user:read
         user:write survey:read survey:write run:read run:write session:read session:write
         data:read file:read file:write"}'
-  recorded_at: 2025-12-16 12:56:18
+  recorded_at: 2025-12-17 17:46:21
 recorded_with: VCR-vcr/2.1.0
