@@ -121,7 +121,57 @@ formr_api_authenticate <- function(host = "https://formr.org",
 	}
 }
 
-#' Internal: API Request Handler (Robust Version)
+#' Revoke Access Token (Logout)
+#'
+#' Invalidates the current access token on the server and clears the local session state.
+#'
+#' @export
+formr_api_logout <- function() {
+	# 1. Get current session
+	session <- formr_api_session()
+	
+	if (is.null(session)) {
+		message("No active session found.")
+		return(invisible(FALSE))
+	}
+	
+	# 2. Construct the URL (Manually, as this is an OAuth endpoint, not V1)
+	# Matches PHP: public function oauthAction... elseif ($action === 'delete_token')
+	url <- session$base_url
+	url$path <- paste0(url$path, "/oauth/delete_token")
+	url$path <- gsub("//", "/", url$path)
+	
+	# 3. Send Request
+	# Matches PHP: $this->post->access_token inside delete_token()
+	tryCatch({
+		res <- httr::POST(
+			url,
+			body = list(access_token = session$token),
+			encode = "form"
+		)
+		
+		# Check for success (200 OK)
+		if (httr::status_code(res) == 200) {
+			message("[SUCCESS] Token revoked on server.")
+		} else {
+			warning("Server could not revoke token (it may already be expired): ", 
+							httr::content(res, "text"))
+		}
+		
+	}, error = function(e) {
+		warning("Network error during logout: ", e$message)
+	})
+	
+	# 4. Clear Local Session (Always do this, even if server request fails)
+	if (exists("session", envir = .formr_state)) {
+		rm("session", envir = .formr_state)
+	}
+	
+	message("[SUCCESS] Local session cleared.")
+	return(invisible(TRUE))
+}
+
+#' Internal: API Request Handler
 #' @noRd
 formr_api_request <- function(endpoint,
 															method = "GET",

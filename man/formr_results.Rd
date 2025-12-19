@@ -29,4 +29,5 @@ A tibble (if joined or only 1 survey found) or a named list of tibbles.
 }
 \description{
 Fetches results and converts them into tidy tibbles.
+Automatically handles randomization (shuffle) groups by pivoting them into columns.
 }
