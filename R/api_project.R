@@ -192,81 +192,97 @@ detect_changes <- function(old_state, new_state) {
 #' Router: Handle changes
 #' @noRd
 handle_project_changes <- function(run_name, dir, changes) {
-    to_process <- c(changes$added, changes$modified)
-
-    # 1. SETTINGS & CSS/JS
-    if (any(grepl("^(css/|js/|run_settings\\.json)", to_process))) {
-        message(" Syncing Settings...")
-        sync_run_settings(run_name, dir)
-    }
-
-    # 2. SURVEYS
-    survey_files <- grep("^surveys/", to_process, value = TRUE)
-    for (f in survey_files) {
-        s_name <- tools::file_path_sans_ext(basename(f))
-
-        # Check for spaces or other URL-unsafe characters
-        if (grepl("[^a-zA-Z0-9_-]", s_name)) {
-            suggested_name <- gsub("[^a-zA-Z0-9_-]", "_", s_name)
-
-            message("[WARNING]  SKIPPED: '", basename(f), "'")
-            message("   Reason: Survey names cannot contain spaces or special characters.")
-            message("   Action: Please rename the file locally to '", suggested_name, ".xlsx'")
-            next # Skip to the next file, preventing the crash
-        }
-
-        message("[INFO] Syncing Survey: ", s_name)
-
-        # Wrapped in tryCatch for cleaner error logs if the server rejects it for other reasons
-        tryCatch(
-            {
-                formr_upload_survey(file_path = file.path(dir, f), survey_name = s_name)
-                message("   [SUCCESS] Upload success")
-            },
-            error = function(e) {
-                message("   [FAILED] Upload failed: ", e$message)
-            }
-        )
-    }
-
-    # 3. UPLOAD FILES
-    asset_files <- grep("^files/", to_process, value = TRUE)
-    if (length(asset_files) > 0) {
-        message("Vm  Uploading ", length(asset_files), " file(s)...")
-        for (f in asset_files) {
-            try(formr_upload_file(run_name, file.path(dir, f)))
-        }
-    }
-
-    # 4. DELETE FILES (With Sanitize Fix)
-    deleted_assets <- grep("^files/", changes$deleted, value = TRUE)
-    if (length(deleted_assets) > 0) {
-        message("Deleting ", length(deleted_assets), " file(s)...")
-
-        for (del_f in deleted_assets) {
-            # Get the raw filename
-            raw_name <- basename(del_f)
-
-            # SANITIZE: Replace spaces with underscores to match server behavior
-            server_name <- gsub(" ", "_", raw_name)
-
-            tryCatch(
-                {
-                    formr_delete_file(run_name, server_name)
-                },
-                error = function(e) {
-                    # Optional: specific error handling if needed
-                    message("   [WARNING] Could not delete '", server_name, "': ", e$message)
-                }
-            )
-        }
-    }
-
-    # 5. STRUCTURE
-    if ("run_structure.json" %in% to_process) {
-        message("[INFO]  Syncing Run Structure...")
-        try(formr_run_structure(run_name, structure_json_path = file.path(dir, "run_structure.json")))
-    }
+	to_process <- c(changes$added, changes$modified)
+	
+	# 1. SETTINGS & CSS/JS
+	if (any(grepl("^(css/|js/|run_settings\\.json)", to_process))) {
+		message(" Syncing Settings...")
+		sync_run_settings(run_name, dir)
+	}
+	
+	# 2. SURVEYS
+	survey_files <- grep("^surveys/", to_process, value = TRUE)
+	for (f in survey_files) {
+		s_name <- tools::file_path_sans_ext(basename(f))
+		
+		# Check for spaces or other URL-unsafe characters
+		if (grepl("[^a-zA-Z0-9_-]", s_name)) {
+			suggested_name <- gsub("[^a-zA-Z0-9_-]", "_", s_name)
+			
+			message("[WARNING]  SKIPPED: '", basename(f), "'")
+			message("   Reason: Survey names cannot contain spaces or special characters.")
+			message("   Action: Please rename the file locally to '", suggested_name, ".xlsx'")
+			next 
+		}
+		
+		message("[INFO] Syncing Survey: ", s_name)
+		
+		tryCatch(
+			{
+				formr_upload_survey(file_path = file.path(dir, f), survey_name = s_name)
+				message("   [SUCCESS] Upload success")
+			},
+			error = function(e) {
+				message("   [FAILED] Upload failed: ", e$message)
+			}
+		)
+	}
+	
+	# 3. UPLOAD FILES
+	asset_files <- grep("^files/", to_process, value = TRUE)
+	if (length(asset_files) > 0) {
+		message("Vm  Uploading ", length(asset_files), " file(s)...")
+		for (f in asset_files) {
+			try(formr_upload_file(run_name, file.path(dir, f)))
+		}
+	}
+	
+	# 4. DELETE FILES
+	deleted_assets <- grep("^files/", changes$deleted, value = TRUE)
+	if (length(deleted_assets) > 0) {
+		message("Deleting ", length(deleted_assets), " file(s)...")
+		
+		for (del_f in deleted_assets) {
+			raw_name <- basename(del_f)
+			server_name <- gsub(" ", "_", raw_name)
+			
+			tryCatch(
+				{
+					formr_delete_file(run_name, server_name)
+				},
+				error = function(e) {
+					message("   [WARNING] Could not delete '", server_name, "': ", e$message)
+				}
+			)
+		}
+	}
+	
+	# 5. STRUCTURE (Modified with Auto-Fix)
+	if ("run_structure.json" %in% to_process) {
+		message("[INFO]  Syncing Run Structure...")
+		
+		json_path <- file.path(dir, "run_structure.json")
+		
+		# The server crashes on empty objects "{}" for fields that expect strings/nulls.
+		# This block reads the file, replaces ": {}" with ": null", and saves it back.
+		tryCatch({
+			txt <- paste(readLines(json_path, warn = FALSE), collapse = "\n")
+			
+			# Regex to find "key": {} and replace with "key": null
+			# Matches: quote, colon, optional space, open brace, close brace
+			clean_txt <- gsub('":\\s*\\{\\}', '": null', txt)
+			
+			# Only write if changes were needed
+			if (txt != clean_txt) {
+				message("   [AUTO-FIX] Converting empty objects '{}' to 'null' for compatibility.")
+				writeLines(clean_txt, json_path)
+			}
+		}, error = function(e) {
+			warning("Failed to auto-clean JSON: ", e$message)
+		})
+		
+		try(formr_run_structure(run_name, structure_json_path = json_path))
+	}
 }
 
 #' Helper: Merge Settings + CSS + JS (with type safety)

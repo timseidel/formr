@@ -1,24 +1,21 @@
 #' List Sessions in a Run
 #' 
-#' Returns a tidy data frame of sessions. Automatically enriches active sessions 
-#' with detailed data (like unit_id, user_id) while keeping the list fast for empty sessions.
+#' Returns a tidy data frame of sessions.
 #' 
 #' @param run_name Name of the run.
 #' @param active Filter: TRUE for ongoing, FALSE for finished, NULL for all.
 #' @param testing Filter: TRUE for test sessions, FALSE for real users, NULL for all.
 #' @param limit Pagination limit (default 100).
 #' @param offset Pagination offset (default 0).
-#' @param detailed Logical. If TRUE (default), fetches extra details for active users.
 #' @return A combined tibble of session states and details.
-#' @importFrom dplyr bind_rows mutate left_join select distinct
 #' @export
-formr_sessions <- function(run_name, active = NULL, testing = NULL, limit = 1000, offset = 0, detailed = TRUE) {
+formr_sessions <- function(run_name, active = NULL, testing = NULL, limit = 1000, offset = 0) {
 	
-	# 1. Fetch the Basic List (The "Phonebook")
 	query <- list(limit = limit, offset = offset)
 	if (!is.null(active)) query$active <- if(active) 1 else 0
 	if (!is.null(testing)) query$testing <- if(testing) 1 else 0
 	
+	# 1. Fetch
 	res <- formr_api_request(paste0("runs/", run_name, "/sessions"), query = query)
 	
 	if (length(res) == 0) {
@@ -26,38 +23,8 @@ formr_sessions <- function(run_name, active = NULL, testing = NULL, limit = 1000
 		return(dplyr::tibble())
 	}
 	
-	# Basic Tidy Table
-	list_df <- dplyr::bind_rows(res) %>%
-		dplyr::mutate(
-			created = as.POSIXct(.data$created),
-			last_access = as.POSIXct(.data$last_access),
-			ended = as.POSIXct(.data$ended),
-			testing = as.logical(.data$testing),
-			position = as.integer(.data$position)
-		)
-	
-	# If we don't want details, or there are no active users, return early
-	if (!detailed || nrow(list_df) == 0) return(list_df)
-	
-	# 3. Fetch Details (The "Dossier")
-	message(sprintf(" Fetching details for %d active participants...", nrow(list_df)))
-	details_df <- formr_session_details(run_name, list_df$session)
-	
-	if (nrow(details_df) == 0) return(list_df)
-	
-	# 4. Smart Merge
-	
-	new_cols <- setdiff(names(details_df), names(list_df))
-	# Always keep 'session' for the join
-	cols_to_merge <- c("session", new_cols)
-	
-	final_df <- list_df %>%
-		dplyr::left_join(
-			details_df %>% dplyr::select(dplyr::all_of(cols_to_merge)), 
-			by = "session"
-		)
-	
-	return(final_df)
+	# 2. Process
+	return(.process_session_data(res))
 }
 
 #' Create Session(s)
@@ -174,10 +141,9 @@ formr_session_action <- function(run_name, session_codes, action, position = NUL
 	invisible(results)
 }
 
-#' Get details for specific sessions (Helper)
+#' Get details for specific sessions
 #' 
-#' Fetches detailed state for a list of session codes.
-#' Handles schema mismatches and missing data robustly.
+#' Fetches detailed state for a specific list of session codes.
 #' 
 #' @param run_name Name of the run
 #' @param session_codes Vector of session IDs
@@ -186,51 +152,75 @@ formr_session_details <- function(run_name, session_codes) {
 	
 	fetch_one <- function(code) {
 		tryCatch({
-			res <- formr_api_request(
+			formr_api_request(
 				endpoint = paste0("runs/", run_name, "/sessions/", code), 
 				method = "GET"
 			)
-			
-			if (!is.list(res)) return(NULL)
-			
-			# --- ROBUST NORMALIZATION ---
-			# Ensures every field has exactly Length 1
-			res_safe <- lapply(res, function(x) {
-				# Case 1: Handle NULLs/Empty (force to NA)
-				if (is.null(x) || length(x) == 0) return(NA)
-				
-				# Case 2: Handle Nested Lists (wrap in list() to keep as one object)
-				# This fixes 'current_unit' breaking the table
-				if (is.list(x) || length(x) > 1) return(list(x))
-				
-				# Case 3: Standard atomic values
-				return(x)
-			})
-			
-			# Use tibble::as_tibble, it handles list-columns better than as.data.frame
-			dplyr::as_tibble(res_safe)
-			
 		}, error = function(e) {
-			# Use paste0 for safer error printing
-			safe_msg <- paste0("[WARNING] Failed to fetch details for '", code, "': ", e$message)
-			warning(safe_msg, call. = FALSE)
+			warning(paste0("[WARNING] Failed to fetch '", code, "': ", e$message), call. = FALSE)
 			return(NULL)
 		})
 	}
 	
-	# Run loop
+	# 1. Fetch Loop
 	results_list <- lapply(session_codes, fetch_one)
-	df <- dplyr::bind_rows(results_list)
 	
-	if (nrow(df) == 0) return(dplyr::tibble())
+	# Filter NULLs (failed requests)
+	results_list <- Filter(Negate(is.null), results_list)
 	
-	# Standardize types
-	# Note: We must check if columns exist because API might omit them
+	# 2. Process
+	return(.process_session_data(results_list))
+}
+
+#' Process Raw Session List (Internal Helper)
+#' 
+#' Converts a list of raw session objects (from JSON) into a tidy tibble.
+#' Handles type conversion and flattening of nested unit data.
+#' 
+#' @param session_list A list of lists (raw API response)
+#' @return A tidy tibble
+#' @noRd
+.process_session_data <- function(session_list) {
+	if (length(session_list) == 0) return(dplyr::tibble())
+	
+	session_list <- lapply(session_list, function(x) {
+		if (!is.null(x$current_unit) && is.list(x$current_unit)) {
+			x$current_unit <- list(x$current_unit)
+		}
+		return(x)
+	})
+	
+	# 1. Bind to initial data frame
+	df <- dplyr::bind_rows(session_list)
+	
+	# 2. Standard Type Conversion
+	# We check for column existence to be safe
 	if ("created" %in% names(df)) df$created <- as.POSIXct(df$created)
-	if ("ended" %in% names(df)) df$ended <- as.POSIXct(df$ended)
 	if ("last_access" %in% names(df)) df$last_access <- as.POSIXct(df$last_access)
-	if ("id" %in% names(df)) df$id <- as.integer(df$id)
+	if ("ended" %in% names(df)) df$ended <- as.POSIXct(df$ended)
+	if ("testing" %in% names(df)) df$testing <- as.logical(df$testing)
 	if ("position" %in% names(df)) df$position <- as.integer(df$position)
 	
-	return(df)
+	# 3. Flatten 'current_unit' if it exists
+	# The API returns nested objects: "current_unit": {"id": 1, ...}
+	if ("current_unit" %in% names(df)) {
+		
+		# Helper to safely extract a field from the list-column
+		extract_field <- function(lst_col, field) {
+			sapply(lst_col, function(x) {
+				if (is.null(x) || !is.list(x) || is.null(x[[field]])) return(NA)
+				return(x[[field]])
+			})
+		}
+		
+		df$unit_id <- as.integer(extract_field(df$current_unit, "id"))
+		df$unit_type <- as.character(extract_field(df$current_unit, "type"))
+		df$unit_description <- as.character(extract_field(df$current_unit, "description"))
+		df$unit_session_id <- as.integer(extract_field(df$current_unit, "session_id"))
+		
+		# Remove the original nested list column
+		df$current_unit <- NULL
+	}
+	
+	return(dplyr::as_tibble(df))
 }

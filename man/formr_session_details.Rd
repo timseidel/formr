@@ -2,7 +2,7 @@
 % Please edit documentation in R/api_sessions.R
 \name{formr_session_details}
 \alias{formr_session_details}
-\title{Get details for specific sessions (Helper)}
+\title{Get details for specific sessions}
 \usage{
 formr_session_details(run_name, session_codes)
 }
@@ -12,6 +12,5 @@ formr_session_details(run_name, session_codes)
 \item{session_codes}{Vector of session IDs}
 }
 \description{
-Fetches detailed state for a list of session codes.
-Handles schema mismatches and missing data robustly.
+Fetches detailed state for a specific list of session codes.
 }
