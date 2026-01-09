@@ -22,7 +22,7 @@ remotes::install_github("rubenarslan/formr")
 
 **To install the legacy version (compatible with older servers):**
 ```r
-remotes::install_github("rubenarslan/formr@v0.11.1")
+remotes::install_github("rubenarslan/formr@873c3ba")
 ```
 
 ## Authentication
