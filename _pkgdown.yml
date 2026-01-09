@@ -1,11 +1,17 @@
 url: http://rubenarslan.github.io/formr/
+
+repo:
+  url:
+    home: https://github.com/rubenarslan/formr
+
 template:
   bootstrap: 5
+  light-switch: true
 
 navbar:
   structure:
     left:  [get_started, reference, articles, news]
-    right: [search, github]
+    right: [search, github, lightswitch]
   components:
     get_started:
       text: Getting Started
