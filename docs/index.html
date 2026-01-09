@@ -31,6 +31,7 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
+<li class="nav-item"><a class="nav-link" href="articles/getting-started.html">Getting Started</a></li>
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-tutorials" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Tutorials</button>
@@ -55,16 +56,24 @@
   </div>
 </nav><div class="container template-home">
 <div class="row">
-  <main id="main" class="col-md-9"><div class="section level1">
+  <main id="main" class="col-md-9"><p><br><br></p>
+<div class="section level1">
 <div class="page-header"><h1 id="formr-r-client-for-formrorg">formr: R Client for formr.org<a class="anchor" aria-label="anchor" href="#formr-r-client-for-formrorg"></a>
 </h1></div>
 <p><a href="https://CRAN.R-project.org/package=formr" class="external-link"><img src="https://www.r-pkg.org/badges/version/formr" alt="CRAN status"></a> <a href="https://app.codecov.io/gh/rubenarslan/formr" class="external-link"><img src="https://codecov.io/gh/rubenarslan/formr/graph/badge.svg" alt="Codecov test coverage"></a></p>
+<p><br></p>
+<div class="section level2">
+<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
+</h2>
 <p>The <strong>formr</strong> R package is the official companion to the <a href="https://formr.org" class="external-link">formr survey framework</a>.</p>
-<p>While the formr-package is designed to provide useful helper functions <em>inside</em> formr surveys (for feedback plots and logic), <strong>version 0.12.0</strong> introduces a robust API client. You can now use R to manage your studies locally, sync files, version control your surveys, and fetch results securely.</p>
+<p>The former package is designed to provide useful helper functions inside formr surveys (for feedback plots and logic). Version 0.12.0 introduces a robust API client. Now, you can use R to manage your studies locally, sync files, control the version of your surveys, and securely fetch results.</p>
+<p><br></p>
+</div>
 <div class="section level2">
 <h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
-<p>Full documentation is available at <strong><a href="https://rubenarslan.github.io/formr" class="external-link">rubenarslan.github.io/formr</a></strong>.</p>
+<p>We highly encourage you to work through the full documentation and tutorials. They are available at <strong><a href="https://rubenarslan.github.io/formr" class="external-link">rubenarslan.github.io/formr</a></strong>.</p>
+<p><br></p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -78,7 +87,8 @@
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"rubenarslan/formr"</span><span class="op">)</span></span></code></pre></div>
 <p><strong>To install the legacy version (compatible with older servers):</strong></p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"rubenarslan/formr@v0.11.1"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"rubenarslan/formr@873c3ba"</span><span class="op">)</span></span></code></pre></div>
+<p><br></p>
 </div>
 <div class="section level2">
 <h2 id="authentication">Authentication<a class="anchor" aria-label="anchor" href="#authentication"></a>
@@ -86,7 +96,7 @@
 <p>To use the API features (fetching results, managing files), you must first authenticate. You can store your credentials securely in your system’s keyring so you don’t have to type them every time.</p>
 <ol style="list-style-type: decimal">
 <li>Log in to formr.org and go to <strong>Account &gt; API Settings</strong>.</li>
-<li>Create a Client ID and Secret (or generate a Personal Access Token).</li>
+<li>Create a Client ID and Secret.</li>
 </ol>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://rubenarslan.github.io/formr/">formr</a></span><span class="op">)</span></span>
@@ -107,6 +117,7 @@
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Simply run:</span></span>
 <span><span class="fu"><a href="reference/formr_api_authenticate.html">formr_api_authenticate</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><br></p>
 </div>
 </div>
 <div class="section level2">
@@ -127,6 +138,7 @@
 <span></span>
 <span><span class="co"># Your data is now ready for analysis!</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cleaned_data</span><span class="op">)</span></span></code></pre></div>
+<p><br></p>
 </div>
 <div class="section level2">
 <h2 id="study-management-pushpull">Study Management (Push/Pull)<a class="anchor" aria-label="anchor" href="#study-management-pushpull"></a>
@@ -151,10 +163,11 @@
 <span></span>
 <span><span class="co"># Push changes back to formr.org</span></span>
 <span><span class="fu"><a href="reference/formr_push_project.html">formr_push_project</a></span><span class="op">(</span><span class="st">"my-run-name"</span>, dir <span class="op">=</span> <span class="st">"my_project"</span><span class="op">)</span></span></code></pre></div>
+<p><br></p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="workflow-3-session-management">Workflow 3: Session Management<a class="anchor" aria-label="anchor" href="#workflow-3-session-management"></a>
+<h2 id="session-management">Session Management<a class="anchor" aria-label="anchor" href="#session-management"></a>
 </h2>
 <p>Control participants programmatically. Useful for automated testing or managing users.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
@@ -166,6 +179,7 @@
 <span></span>
 <span><span class="co"># Move a user to a specific position in the run</span></span>
 <span><span class="fu"><a href="reference/formr_session_action.html">formr_session_action</a></span><span class="op">(</span><span class="st">"my-run-name"</span>, session_codes <span class="op">=</span> <span class="st">"..."</span>, action <span class="op">=</span> <span class="st">"move_to_position"</span>, position <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
+<p><br></p>
 </div>
 <div class="section level2">
 <h2 id="helper-functions-inside-formr">Helper Functions (Inside formr)<a class="anchor" aria-label="anchor" href="#helper-functions-inside-formr"></a>
@@ -175,9 +189,7 @@
 <li>
 <strong>Logic Shorthands:</strong> <code><a href="reference/time_passed.html">time_passed()</a></code>, <code>%contains%</code>, <code><a href="reference/if_na.html">if_na()</a></code>.</li>
 <li>
-<strong>Feedback Plots:</strong> <code><a href="reference/qplot_on_normal.html">qplot_on_normal()</a></code>, <code><a href="reference/qplot_on_bar.html">qplot_on_bar()</a></code>.</li>
-<li>
-<strong>Markdown Helpers:</strong> <code><a href="reference/formr_render_commonmark.html">formr_render_commonmark()</a></code>.</li>
+<strong>Feedback Plots:</strong> <code><a href="reference/qplot_on_normal.html">qplot_on_normal()</a></code>, <code><a href="reference/qplot_on_bar.html">qplot_on_bar()</a></code>, <code>feedback_chunk</code>.</li>
 </ul>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Example: Check if a string contains a word</span></span>
@@ -185,6 +197,7 @@
 <span></span>
 <span><span class="co"># Example: Feedback text logic</span></span>
 <span><span class="fu"><a href="reference/feedback_chunk.html">feedback_chunk</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Low"</span>, <span class="st">"Average"</span>, <span class="st">"High"</span><span class="op">)</span><span class="op">)</span> <span class="co"># Returns "Average"</span></span></code></pre></div>
+<p><br></p>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
@@ -192,6 +205,7 @@
 <p>MIT</p>
 </div>
 </div>
+
   </main><aside class="col-md-3"><div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">

@@ -1,14 +1,26 @@
+<br>
+<br>
+
 # formr: R Client for formr.org
 
 [![CRAN status](https://www.r-pkg.org/badges/version/formr)](https://CRAN.R-project.org/package=formr)
 [![Codecov test coverage](https://codecov.io/gh/rubenarslan/formr/graph/badge.svg)](https://app.codecov.io/gh/rubenarslan/formr)
 
+<br>
+
+## Overview
+
 The **formr** R package is the official companion to the [formr survey framework](https://formr.org). 
 
-While the formr-package is designed to provide useful helper functions *inside* formr surveys (for feedback plots and logic), **version 0.12.0** introduces a robust API client. You can now use R to manage your studies locally, sync files, version control your surveys, and fetch results securely.
+The former package is designed to provide useful helper functions inside formr surveys (for feedback plots and logic). Version 0.12.0 introduces a robust API client. Now, you can use R to manage your studies locally, sync files, control the version of your surveys, and securely fetch results.
+
+<br>
 
 ## Documentation
-Full documentation is available at **[rubenarslan.github.io/formr](https://rubenarslan.github.io/formr)**.
+We highly encourage you to work through the full documentation and tutorials.
+They are available at **[rubenarslan.github.io/formr](https://rubenarslan.github.io/formr)**.
+
+<br>
 
 ## Installation
 
@@ -24,13 +36,14 @@ remotes::install_github("rubenarslan/formr")
 ```r
 remotes::install_github("rubenarslan/formr@873c3ba")
 ```
+<br>
 
 ## Authentication
 
 To use the API features (fetching results, managing files), you must first authenticate. You can store your credentials securely in your system's keyring so you don't have to type them every time.
 
 1.  Log in to formr.org and go to **Account > API Settings**.
-2.  Create a Client ID and Secret (or generate a Personal Access Token).
+2.  Create a Client ID and Secret.
 
 ```r
 library(formr)
@@ -53,6 +66,7 @@ formr_api_authenticate()
 # Simply run:
 formr_api_authenticate()
 ```
+<br>
 
 ## Fetching & Processing Results
 
@@ -73,6 +87,7 @@ cleaned_data <- formr_post_process_results("my-run-name")
 # Your data is now ready for analysis!
 head(cleaned_data)
 ```
+<br>
 
 ## Study Management (Push/Pull)
 
@@ -98,8 +113,9 @@ formr_pull_project("my-run-name", dir = "my_project")
 # Push changes back to formr.org
 formr_push_project("my-run-name", dir = "my_project")
 ```
+<br>
 
-## Workflow 3: Session Management
+## Session Management
 
 Control participants programmatically. Useful for automated testing or managing users.
 
@@ -113,14 +129,14 @@ session_info <- formr_sessions("my-run-name", session_codes = "...")
 # Move a user to a specific position in the run
 formr_session_action("my-run-name", session_codes = "...", action = "move_to_position", position = 10)
 ```
+<br>
 
 ## Helper Functions (Inside formr)
 
 The package contains the utility functions used *inside* formr's OpenCPU environment for dynamic feedback and logic:
 
 * **Logic Shorthands:** `time_passed()`, `%contains%`, `if_na()`.
-* **Feedback Plots:** `qplot_on_normal()`, `qplot_on_bar()`.
-* **Markdown Helpers:** `formr_render_commonmark()`.
+* **Feedback Plots:** `qplot_on_normal()`, `qplot_on_bar()`, `feedback_chunk`.
 
 ```r
 # Example: Check if a string contains a word
@@ -129,6 +145,7 @@ The package contains the utility functions used *inside* formr's OpenCPU environ
 # Example: Feedback text logic
 feedback_chunk(0.5, c("Low", "Average", "High")) # Returns "Average"
 ```
+<br>
 
 ## License
 

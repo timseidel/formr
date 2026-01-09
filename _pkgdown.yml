@@ -4,9 +4,13 @@ template:
 
 navbar:
   structure:
-    left:  [intro, reference, articles, news]
+    left:  [get_started, reference, articles, news]
     right: [search, github]
   components:
+    get_started:
+      text: Getting Started
+      href: articles/getting-started.html
+      
     articles:
       text: Tutorials
       menu:
