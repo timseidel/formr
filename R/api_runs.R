@@ -187,8 +187,6 @@ formr_run_structure <- function(run_name, structure_json_path = NULL, file = NUL
 	return(res)
 }
 
-
-
 #' Print method for formr run structure
 #' @param x The object.
 #' @param ... Additional arguments.

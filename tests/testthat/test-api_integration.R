@@ -124,7 +124,7 @@ test_that("formr_session_action moves user position", {
 		expect_true(success)
 		
 		# 3. Verify: Fetch details to prove they actually moved
-		details <- formr_session_details("test-run", code)
+		details <- formr_sessions("test-run", code)
 		expect_equal(as.numeric(details$position), 10)
 		
 	}, match_requests_on = c("method", "uri", "body"))

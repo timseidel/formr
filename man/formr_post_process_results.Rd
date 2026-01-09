@@ -10,8 +10,7 @@ formr_post_process_results(
   results = NULL,
   item_displays = NULL,
   remove_test_sessions = TRUE,
-  tag_missings = !is.null(item_displays),
-  fallback_max = 5
+  tag_missings = !is.null(item_displays)
 )
 }
 \arguments{
@@ -26,8 +25,6 @@ formr_post_process_results(
 \item{remove_test_sessions}{Filter out sessions with "XXX".}
 
 \item{tag_missings}{Tag NAs if display data is present.}
-
-\item{fallback_max}{Max value for Likert reversal (default 5).}
 }
 \description{
 The master pipeline for cleaning data.

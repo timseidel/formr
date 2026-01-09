@@ -1,33 +1,35 @@
-#' Initialize a Formr Project
-#' Scaffolds folder structure and downloads current state.
+#' Pull Project from Server
+#' Scaffolds folder structure if missing, then overwrites local files with Server state.
 #' @param run_name Name of the run.
 #' @param dir Local directory (default ".").
+#' @param prompt Logical. If TRUE (default), asks for confirmation before overwriting (unless dir is empty).
 #' @export
-formr_init_project <- function(run_name, dir = ".") {
+formr_pull_project <- function(run_name, dir = ".", prompt = TRUE) {
+	
+	# --- 1. Scaffolding ---
+	
+	# Ensure main directory exists
+	if (!dir.exists(dir)) dir.create(dir, recursive = TRUE)
+	
+	# Ensure sub-directories exist
 	dirs <- c("surveys", "files", "css", "js")
 	for (d in dirs) {
-		if (!dir.exists(file.path(dir, d))) dir.create(file.path(dir, d), recursive = TRUE)
+		sub_d <- file.path(dir, d)
+		if (!dir.exists(sub_d)) dir.create(sub_d, recursive = TRUE)
 	}
 	
-	# Create .formrignore if missing
+	# Ensure .formrignore exists
 	if (!file.exists(file.path(dir, ".formrignore"))) {
 		writeLines(c(".git", ".Rproj.user", "*.Rproj", ".DS_Store", "backup/", "results.rds"), file.path(dir, ".formrignore"))
 	}
 	
-	# Initial Pull (No prompt needed for initialization)
-	formr_pull_project(run_name, dir, prompt = FALSE)
-}
-
-#' Pull Project from Server (Manual Sync)
-#' Overwrites local files with Server state.
-#' @param run_name Name of the run.
-#' @param dir Local directory (default ".").
-#' @param prompt Logical. If TRUE (default), asks for confirmation before overwriting.
-#' @export
-formr_pull_project <- function(run_name, dir = ".", prompt = TRUE) {
+	# --- 2. Safety Check ---
 	
-	if (prompt) {
-		cat(sprintf("[WARNING]  WARNING: You are about to overwrite local files in '%s' with data from run '%s'.\n", normalizePath(dir, mustWork = FALSE), run_name))
+	# If the directory is effectively empty, we skip warning the user about overwriting.
+	is_fresh_install <- length(list.files(dir, pattern = "\\.json$|surveys|files", recursive = TRUE)) == 0
+	
+	if (prompt && !is_fresh_install) {
+		cat(sprintf("[WARNING] You are about to overwrite local files in '%s' with data from run '%s'.\n", normalizePath(dir, mustWork = FALSE), run_name))
 		cat("   Any local changes that have not been pushed to the server will be LOST.\n")
 		
 		response <- readline(prompt = "   Are you sure you want to proceed? (y/n): ")
@@ -37,18 +39,18 @@ formr_pull_project <- function(run_name, dir = ".", prompt = TRUE) {
 		}
 	}
 	
-	message("Pulling changes from Server...")
+	message("[INFO] Pulling changes from Server...")
 	
 	struct <- NULL
 	
-	# 1. Structure
+	# --- 3. Structure ---
 	tryCatch({
 		struct <- formr_run_structure(run_name)
 		jsonlite::write_json(struct, file.path(dir, "run_structure.json"), pretty = TRUE, auto_unbox = TRUE)
 		message("[SUCCESS] Structure downloaded.")
 	}, error = function(e) warning("Failed to pull structure: ", e$message))
 	
-	# 2. Settings (Specific to Project Management, usually skipped in simple backups)
+	# --- 4. Settings ---
 	tryCatch({
 		settings <- formr_run_settings(run_name)
 		
@@ -67,53 +69,80 @@ formr_pull_project <- function(run_name, dir = ".", prompt = TRUE) {
 		message("[SUCCESS] Settings downloaded.")
 	}, error = function(e) warning("Failed to pull settings: ", e$message))
 	
-	# 3. Surveys (Using Shared Helper)
+	# --- 5. Surveys (Using Shared Helper) ---
 	if (!is.null(struct)) {
 		.sync_server_surveys(struct, dir)
 	}
 	
-	# 4. Files (Using Shared Helper)
+	# --- 6. Files (Using Shared Helper) ---
 	.sync_server_files(run_name, dir)
 	
 	message("[SUCCESS] Project files updated from server.")
 }
 
-#' Start Project Watcher (Push Only)
-#' Monitors local files and pushes changes to formr immediately.
+#' Push Project to Server
+#' 
+#' Uploads local project files (surveys, assets, settings) to the formr server.
+#' Optionally monitors the directory for subsequent changes (Watcher mode).
+#'
 #' @param run_name Name of the run.
 #' @param dir Local directory (default ".").
-#' @param interval Seconds between checks (default 2).
+#' @param watch Logical. If TRUE, keeps the process running to monitor and push changes (default FALSE).
+#' @param interval Seconds between checks in watch mode (default 2).
 #' @export
-formr_watch_project <- function(run_name, dir = ".", interval = 2) {
-	if (!dir.exists(dir)) stop("Directory not found. Run formr_init_project() first.")
+formr_push_project <- function(run_name, dir = ".", watch = FALSE, interval = 2) {
+	if (!dir.exists(dir)) stop("Directory not found. Run formr_pull_project() first.")
 	
-	message(sprintf("[INFO] Watching '%s' -> Run '%s'", normalizePath(dir), run_name))
-	message("   (Local edits are Pushed to Server. Press Esc to stop)")
+	message(sprintf("[INFO] Pushing '%s' -> Run '%s'", normalizePath(dir), run_name))
 	
-	# Initial State
-	last_state <- get_project_state(dir)
+	# 1. Initial Push (Sync current state)
+	current_state <- get_project_state(dir)
 	
-	tryCatch(
-		{
-			while (TRUE) {
-				Sys.sleep(interval)
-				
-				current_state <- get_project_state(dir)
-				changes <- detect_changes(last_state, current_state)
-				
-				if (length(changes$added) > 0 || length(changes$modified) > 0 || length(changes$deleted) > 0) {
-					# Sync Logic
-					handle_project_changes(run_name, dir, changes)
-					
-					# Update State
-					last_state <- current_state
-				}
-			}
-		},
-		interrupt = function(i) {
-			message("\n[INFO] Watcher stopped.")
-		}
+	# Treat all current files as 'added' (or modified) to force an upload
+	initial_changes <- list(
+		added = names(current_state),
+		modified = character(0),
+		deleted = character(0)
 	)
+	
+	# Only push if there are files
+	if (length(initial_changes$added) > 0) {
+		message("   (Uploading current project state...)")
+		handle_project_changes(run_name, dir, initial_changes)
+		message("[SUCCESS] Push complete.")
+	} else {
+		message("[INFO] Directory is empty (or everything is ignored). Nothing to push.")
+	}
+	
+	# 2. Watcher Mode
+	if (watch) {
+		message("\n[INFO] Watcher mode active. Monitoring for changes...")
+		message("   (Press Esc to stop)")
+		
+		last_state <- current_state
+		
+		tryCatch(
+			{
+				while (TRUE) {
+					Sys.sleep(interval)
+					
+					current_state <- get_project_state(dir)
+					changes <- detect_changes(last_state, current_state)
+					
+					if (length(changes$added) > 0 || length(changes$modified) > 0 || length(changes$deleted) > 0) {
+						# Sync Logic
+						handle_project_changes(run_name, dir, changes)
+						
+						# Update State
+						last_state <- current_state
+					}
+				}
+			},
+			interrupt = function(i) {
+				message("\n[INFO] Watcher stopped.")
+			}
+		)
+	}
 }
 
 # --- INTERNAL HELPERS ---
@@ -121,72 +150,73 @@ formr_watch_project <- function(run_name, dir = ".", interval = 2) {
 #' Get recursive file state
 #' @noRd
 get_project_state <- function(dir) {
-    all_files <- list.files(dir, recursive = TRUE, full.names = FALSE, all.files = TRUE)
-    ignores <- read_ignore_file(dir)
-    files_to_track <- Filter(function(f) !is_ignored(f, ignores), all_files)
-    info <- file.info(file.path(dir, files_to_track))
-    structure(as.numeric(info$mtime), names = files_to_track)
+	all_files <- list.files(dir, recursive = TRUE, full.names = FALSE, all.files = TRUE)
+	ignores <- read_ignore_file(dir)
+	files_to_track <- Filter(function(f) !is_ignored(f, ignores), all_files)
+	info <- file.info(file.path(dir, files_to_track))
+	structure(as.numeric(info$mtime), names = files_to_track)
 }
 
 #' Read .formrignore
 #' @noRd
 read_ignore_file <- function(dir) {
-    f <- file.path(dir, ".formrignore")
-    if (file.exists(f)) {
-        lines <- readLines(f, warn = FALSE)
-        lines <- lines[trimws(lines) != "" & !startsWith(trimws(lines), "#")]
-        return(lines)
-    }
-    return(c())
+	f <- file.path(dir, ".formrignore")
+	if (file.exists(f)) {
+		lines <- readLines(f, warn = FALSE)
+		lines <- lines[trimws(lines) != "" & !startsWith(trimws(lines), "#")]
+		return(lines)
+	}
+	return(c())
 }
 
-#' Check ignore patterns (Fixed for nested files)
+#' Check ignore patterns
 #' @noRd
 is_ignored <- function(file, patterns) {
-    # 1. Always ignore these specific system files
-    if (file %in% c(".formrignore", ".git", ".Rhistory")) {
-        return(TRUE)
-    }
-
-    for (p in patterns) {
-        # 2. Handle Directory Ignores (e.g. "backup/")
-        if (endsWith(p, "/")) {
-            if (startsWith(file, p)) {
-                return(TRUE)
-            }
-        }
-
-        # 3. Handle File Ignores (e.g. ".DS_Store" or "*.png")
-        # If the pattern has no slashes, we check if the filename matches (ignoring the folder path)
-        if (!grepl("/", p)) {
-            if (grepl(glob2rx(p), basename(file))) {
-                return(TRUE)
-            }
-        }
-
-        # 4. Handle Path Ignores (e.g. "files/secret.csv")
-        # Check the full path against the pattern
-        if (grepl(glob2rx(p), file)) {
-            return(TRUE)
-        }
-    }
-
-    return(FALSE)
+	# 1. Always ignore these specific system files and standard temp files
+	#    Allows implicit ignoring of Excel/Word lock files starting with ~$
+	if (file %in% c(".formrignore", ".git", ".Rhistory") || startsWith(basename(file), "~$")) {
+		return(TRUE)
+	}
+	
+	for (p in patterns) {
+		# 2. Handle Directory Ignores (e.g. "backup/")
+		if (endsWith(p, "/")) {
+			if (startsWith(file, p)) {
+				return(TRUE)
+			}
+		}
+		
+		# 3. Handle File Ignores (e.g. ".DS_Store" or "*.png")
+		# If the pattern has no slashes, we check if the filename matches (ignoring the folder path)
+		if (!grepl("/", p)) {
+			if (grepl(glob2rx(p), basename(file))) {
+				return(TRUE)
+			}
+		}
+		
+		# 4. Handle Path Ignores (e.g. "files/secret.csv")
+		# Check the full path against the pattern
+		if (grepl(glob2rx(p), file)) {
+			return(TRUE)
+		}
+	}
+	
+	return(FALSE)
 }
 
 #' Detect Changes
 #' @noRd
 detect_changes <- function(old_state, new_state) {
-    old_files <- names(old_state)
-    new_files <- names(new_state)
-
-    added <- setdiff(new_files, old_files)
-    deleted <- setdiff(old_files, new_files)
-
-    common <- intersect(new_files, old_files)
-    modified <- common[new_state[common] > old_state[common]]
-
-    list(added = added, modified = modified, deleted = deleted)
+	old_files <- names(old_state)
+	new_files <- names(new_state)
+	
+	added <- setdiff(new_files, old_files)
+	deleted <- setdiff(old_files, new_files)
+	
+	common <- intersect(new_files, old_files)
+	modified <- common[new_state[common] > old_state[common]]
+	
+	list(added = added, modified = modified, deleted = deleted)
 }
 
 #' Router: Handle changes

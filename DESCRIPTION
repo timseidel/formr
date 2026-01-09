@@ -3,6 +3,10 @@ Title: formr survey framework accompanying R package
 Description: The formr R package provides a few convenience functions
     that may be useful to the users of formr (formr.org), an online
     survey framework which heavily relies on R via openCPU.
+    Features include a robust API client for project management 
+    (initializing, pushing, and syncing survey assets), 
+    session control (creating, tracking, and modifying user sessions), 
+    and data retrieval.
     Some of the functions are for conveniently generating individual
     feedback graphics, some are just shorthands to make certain common
     operations in formr more palatable to R novices.
@@ -33,6 +37,7 @@ Imports:
 		purrr,
 		readr,
 		rlang,
+		tidyr,
 		tibble
 License: MIT + file LICENSE
 LazyData: true

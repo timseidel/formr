@@ -4,14 +4,14 @@
 \alias{formr_backup_run}
 \title{Backup a study}
 \usage{
-formr_backup_run(run_name, save_path = NULL, overwrite = FALSE)
+formr_backup_run(run_name, dir = NULL, prompt = TRUE)
 }
 \arguments{
 \item{run_name}{Name of the run/study.}
 
-\item{save_path}{Local folder to save data (defaults to run_name).}
+\item{dir}{Local folder to save data (defaults to run_name).}
 
-\item{overwrite}{Logical. Overwrite existing files?}
+\item{prompt}{Logical. If TRUE (default), asks for confirmation before overwriting.}
 }
 \description{
 Downloads the full run structure, all survey items, attached files, and results.

@@ -2,8 +2,8 @@
 % Please edit documentation in R/api_project.R
 \name{formr_pull_project}
 \alias{formr_pull_project}
-\title{Pull Project from Server (Manual Sync)
-Overwrites local files with Server state.}
+\title{Pull Project from Server
+Scaffolds folder structure if missing, then overwrites local files with Server state.}
 \usage{
 formr_pull_project(run_name, dir = ".", prompt = TRUE)
 }
@@ -12,9 +12,9 @@ formr_pull_project(run_name, dir = ".", prompt = TRUE)
 
 \item{dir}{Local directory (default ".").}
 
-\item{prompt}{Logical. If TRUE (default), asks for confirmation before overwriting.}
+\item{prompt}{Logical. If TRUE (default), asks for confirmation before overwriting (unless dir is empty).}
 }
 \description{
-Pull Project from Server (Manual Sync)
-Overwrites local files with Server state.
+Pull Project from Server
+Scaffolds folder structure if missing, then overwrites local files with Server state.
 }

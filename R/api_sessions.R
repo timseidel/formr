@@ -1,21 +1,49 @@
 #' List Sessions in a Run
 #' 
-#' Returns a tidy data frame of sessions.
+#' Returns a tidy data frame of sessions. Can either list all sessions (with filtering)
+#' or fetch specific sessions by their codes.
 #' 
 #' @param run_name Name of the run.
+#' @param session_codes Optional. A character vector of session codes to fetch specific details for. 
+#'   If provided, `active`, `limit`, and `offset` are ignored.
 #' @param active Filter: TRUE for ongoing, FALSE for finished, NULL for all.
 #' @param testing Filter: TRUE for test sessions, FALSE for real users, NULL for all.
-#' @param limit Pagination limit (default 100).
+#' @param limit Pagination limit (default 1000).
 #' @param offset Pagination offset (default 0).
 #' @return A combined tibble of session states and details.
 #' @export
-formr_sessions <- function(run_name, active = NULL, testing = NULL, limit = 1000, offset = 0) {
+formr_sessions <- function(run_name, session_codes = NULL, active = NULL, testing = NULL, limit = 1000, offset = 0) {
 	
+	# --- MODE A: Fetch specific codes ---
+	if (!is.null(session_codes)) {
+		
+		fetch_one <- function(code) {
+			tryCatch({
+				formr_api_request(
+					endpoint = paste0("runs/", run_name, "/sessions/", code), 
+					method = "GET"
+				)
+			}, error = function(e) {
+				warning(paste0("[WARNING] Failed to fetch '", code, "': ", e$message), call. = FALSE)
+				return(NULL)
+			})
+		}
+		
+		# Fetch Loop
+		results_list <- lapply(session_codes, fetch_one)
+		
+		# Filter NULLs (failed requests)
+		results_list <- Filter(Negate(is.null), results_list)
+		
+		return(.process_session_data(results_list))
+	}
+	
+	# --- MODE B: List/Search sessions ---
 	query <- list(limit = limit, offset = offset)
 	if (!is.null(active)) query$active <- if(active) 1 else 0
 	if (!is.null(testing)) query$testing <- if(testing) 1 else 0
 	
-	# 1. Fetch
+	# Fetch
 	res <- formr_api_request(paste0("runs/", run_name, "/sessions"), query = query)
 	
 	if (length(res) == 0) {
@@ -23,7 +51,6 @@ formr_sessions <- function(run_name, active = NULL, testing = NULL, limit = 1000
 		return(dplyr::tibble())
 	}
 	
-	# 2. Process
 	return(.process_session_data(res))
 }
 
@@ -139,37 +166,6 @@ formr_session_action <- function(run_name, session_codes, action, position = NUL
 	}
 	
 	invisible(results)
-}
-
-#' Get details for specific sessions
-#' 
-#' Fetches detailed state for a specific list of session codes.
-#' 
-#' @param run_name Name of the run
-#' @param session_codes Vector of session IDs
-#' @export
-formr_session_details <- function(run_name, session_codes) {
-	
-	fetch_one <- function(code) {
-		tryCatch({
-			formr_api_request(
-				endpoint = paste0("runs/", run_name, "/sessions/", code), 
-				method = "GET"
-			)
-		}, error = function(e) {
-			warning(paste0("[WARNING] Failed to fetch '", code, "': ", e$message), call. = FALSE)
-			return(NULL)
-		})
-	}
-	
-	# 1. Fetch Loop
-	results_list <- lapply(session_codes, fetch_one)
-	
-	# Filter NULLs (failed requests)
-	results_list <- Filter(Negate(is.null), results_list)
-	
-	# 2. Process
-	return(.process_session_data(results_list))
 }
 
 #' Process Raw Session List (Internal Helper)

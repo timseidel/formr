@@ -57,7 +57,6 @@ test_that("choice_labels_for_values works correctly", {
 	test_df <- data.frame(q1 = c(1, 2, 1))
 	
 	# Choices should be Label = Value (e.g. Agree = 1)
-	# This enables the helper to map Value (1) -> Label (Agree)
 	attr(test_df$q1, "item_meta") <- list(
 		name = "q1",
 		choices = list(list(
@@ -79,10 +78,10 @@ test_that("formr_label_missings handles missing values correctly", {
 # ---------------------------------------------------------
 
 test_that("formr_post_process_results works correctly", {
+	# 1. Load Data
 	results <- jsonlite::fromJSON(txt = 
 																	system.file('extdata/BFI_post.json', package = 'formr', mustWork = TRUE))
 	
-	#Extract $items from the loaded JSON wrapper
 	json_items <- jsonlite::fromJSON(
 		system.file('extdata/BFI_post_items.json', package = 'formr', mustWork = TRUE)
 	)
@@ -91,7 +90,32 @@ test_that("formr_post_process_results works correctly", {
 	item_displays <- jsonlite::fromJSON(
 		system.file('extdata/BFI_post_itemdisplay.json', package = 'formr', mustWork = TRUE))
 	
-	# Removed legacy arguments
+	# 2. PATCH METADATA FOR TEST
+	# The JSON 'choices' only contains anchors (e.g. "1" and "2").
+	# We manually inject the full 1-5 scale so the code detects Min=1, Max=5 for reversal.
+	
+	scale_1_to_5 <- list(
+		"Trifft überhaupt nicht zu" = 1,
+		"2" = 2,
+		"3" = 3,
+		"4" = 4,
+		"Trifft voll und ganz zu" = 5
+	)
+	
+	# IMPORTANT: Ensure 'choices' is a list-column, not a dataframe or NULL.
+	# jsonlite often parses nested objects as a dataframe. We wipe it to a clean list
+	# to avoid the "replacement has X rows" error when assigning to [[i]].
+	items$choices <- vector("list", nrow(items))
+	
+	# Identify BFI items
+	bfi_rows <- grep("BFI", items$name)
+	
+	# Overwrite choices for BFI items with the full numeric scale
+	for(i in bfi_rows) {
+		items$choices[[i]] <- scale_1_to_5
+	}
+	
+	# 3. Run Function
 	processed_results <- formr_post_process_results(
 		item_list = items, 
 		results = results, 
@@ -99,6 +123,7 @@ test_that("formr_post_process_results works correctly", {
 		tag_missings = FALSE 
 	)
 	
+	# 4. Assertions
 	if("session" %in% names(results)) {
 		expect_true(all(!stringr::str_detect(processed_results$session, "XXX")))
 	}
@@ -106,13 +131,24 @@ test_that("formr_post_process_results works correctly", {
 	if("created" %in% names(processed_results)) {
 		expect_true(inherits(processed_results$created, "POSIXct"))
 	}
+	
+	# Check Reversal Logic (BFIK_agree_4R)
+	# With Min=1, Max=5, Reversal Constant = 6. 
+	if("BFIK_agree_4R" %in% names(processed_results)) {
+		# Check that the 'reversed' attribute was added
+		expect_true(!is.null(attr(processed_results$BFIK_agree_4R, "reversed")), 
+								"Item should be marked as reversed")
+		
+		# Validate calculation
+		reversal_const <- attr(processed_results$BFIK_agree_4R, "reversal_const")
+		expect_equal(reversal_const, 6) # 1 + 5
+	}
 })
 
 test_that("formr_aggregate works with example data", {
 	results <- jsonlite::fromJSON(txt = 
 																	system.file('extdata/gods_example_results.json', package = 'formr', mustWork = TRUE))
 	
-	# Extract $items
 	json_items <- jsonlite::fromJSON(
 		system.file('extdata/gods_example_items.json', package = 'formr', mustWork = TRUE)
 	)
@@ -136,7 +172,6 @@ test_that("formr_recognise works with example data", {
 	results <- jsonlite::fromJSON(txt = 
 																	system.file('extdata/gods_example_results.json', package = 'formr', mustWork = TRUE))
 	
-	# Extract $items
 	json_items <- jsonlite::fromJSON(
 		system.file('extdata/gods_example_items.json', package = 'formr', mustWork = TRUE)
 	)
@@ -160,7 +195,6 @@ test_that("formr_recognise works with example data", {
 })
 
 test_that("formr_items helper (json loading) works with example data", {
-	# Extract $items
 	json_items <- jsonlite::fromJSON(
 		system.file('extdata/gods_example_items.json', package = 'formr', mustWork = TRUE)
 	)

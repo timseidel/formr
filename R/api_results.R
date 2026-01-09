@@ -8,12 +8,13 @@
 #' @param session_ids Optional. Filter by specific session IDs.
 #' @param item_names Optional. Filter by specific item names (columns).
 #' @param join Logical. If TRUE, merges all surveys into one wide table by 'session',
-#'   suffixing column names with the survey name to prevent conflicts.
+#'  suffixing column names with the survey name to prevent conflicts.
 #' @return A tibble (if joined or only 1 survey found) or a named list of tibbles.
-#' @importFrom dplyr bind_rows as_tibble full_join left_join rename_with select distinct
+#' @importFrom dplyr bind_rows as_tibble full_join left_join rename_with select distinct mutate case_when
 #' @importFrom readr type_convert cols
 #' @importFrom purrr map reduce
 #' @importFrom tidyr pivot_wider
+#' @importFrom rlang .data
 #' @export
 formr_results <- function(run_name,
 													surveys = NULL,
@@ -49,49 +50,57 @@ formr_results <- function(run_name,
 		return(df)
 	}
 	
-	# 4. Handle Shuffles (New Logic)
-	# We extract 'shuffles' first so it doesn't interfere with the survey join loop
+	# 4. Handle Shuffles
 	shuffle_df <- NULL
 	if ("shuffles" %in% names(res)) {
 		raw_shuffles <- res$shuffles
-		res$shuffles <- NULL # Remove from the list to process surveys separately
+		res$shuffles <- NULL 
 		
 		if (length(raw_shuffles) > 0) {
 			s_df <- clean_survey_data(raw_shuffles)
 			
-			# Transform: 
-			# 1. Rename 'run_session' -> 'session' to match surveys
-			# 2. Pivot 'unit_name' (shuffle name) -> columns
-			if (nrow(s_df) > 0 && "unit_name" %in% names(s_df)) {
+			# Use unit_id as the primary check since it's always in the DB
+			if (nrow(s_df) > 0 && "unit_id" %in% names(s_df)) {
+				
+				# Robustness: If 'position' is missing (e.g., all NULLs in JSON), add it as NA
+				if (!"position" %in% names(s_df)) {
+					s_df$position <- NA
+				}
+				
 				shuffle_df <- s_df %>%
-					dplyr::select(session = run_session, unit_name, group) %>%
+					dplyr::select(session = .data$run_session, .data$position, .data$unit_id, .data$group) %>%
+					dplyr::mutate(
+						# Logic: Use position if present, else fallback to unit_id
+						position_col = dplyr::case_when(
+							!is.na(.data$position) ~ paste0("shuffle_", .data$position),
+							TRUE ~ paste0("shuffle_unit_", .data$unit_id)
+						)
+					) %>%
+					dplyr::select(-.data$position, -.data$unit_id) %>%
 					dplyr::distinct() %>% 
 					tidyr::pivot_wider(
-						names_from = "unit_name", 
+						names_from = "position_col", 
 						values_from = "group",
-						values_fn = list(group = toString) # Handle duplicates safely
+						values_fn = list(group = toString)
 					)
 			}
 		}
 	}
 	
-	# 5. Process Surveys (Result is a named list of tibbles)
+	# 5. Process Surveys
 	results_list <- purrr::map(res, clean_survey_data)
 	
 	# 6. Handle Join Logic
 	if (join) {
-		# 6a. Join Surveys
 		if (length(results_list) > 1) {
 			message(" Joining surveys by 'session'...")
 			all_cols <- unlist(lapply(results_list, names))
 			duplicates <- all_cols[duplicated(all_cols) & all_cols != "session"]
 			
 			if (length(duplicates) == 0) {
-				# Safe to join without renaming
 				message("Joining surveys (no column conflicts detected)...")
 				joined_df <- purrr::reduce(results_list, dplyr::full_join, by = "session")
 			} else {
-				# Pre-processing: Rename columns to {column}_{survey_name}
 				results_list_renamed <- mapply(function(df, s_name) {
 					if (ncol(df) == 0) return(df)
 					cols_to_rename <- setdiff(names(df), "session")
@@ -115,28 +124,22 @@ formr_results <- function(run_name,
 			joined_df <- dplyr::tibble(session = character())
 		}
 		
-		# 6b. Attach Shuffles to the Joined Result
 		if (!is.null(shuffle_df)) {
 			message(" Attaching shuffle groups...")
-			# If we have survey data, left_join preserves survey rows and adds shuffle info.
-			# If no survey data exists (empty joined_df), we start with the shuffle data.
 			if (nrow(joined_df) == 0) {
 				joined_df <- shuffle_df
 			} else {
 				joined_df <- dplyr::left_join(joined_df, shuffle_df, by = "session")
 			}
 		}
-		
 		return(joined_df)
 	}
 	
 	# Case B: List Return
-	# Add shuffles back to the list as a clean, wide tibble
 	if (!is.null(shuffle_df)) {
 		results_list$shuffles <- shuffle_df
 	}
 	
-	# Auto-unwrap if only 1 element (e.g. just shuffles or just 1 survey)
 	if (length(results_list) == 1) {
 		return(results_list[[1]])
 	}

@@ -4,16 +4,14 @@
 \alias{formr_reverse}
 \title{Reverse Items}
 \usage{
-formr_reverse(results, item_list = NULL, fallback_max = 5)
+formr_reverse(results, item_list = NULL)
 }
 \arguments{
 \item{results}{Results tibble.}
 
 \item{item_list}{Metadata tibble.}
-
-\item{fallback_max}{Default max for reversal if unknown (default 5).}
 }
 \description{
-Reverses items ending in 'R' (e.g. \code{extra_1R}).
-Uses metadata to find max value, or falls back to \code{fallback_max}.
+Reverses items ending in 'R' (e.g. \code{extra_1R}) using metadata bounds.
+Uses the robust formula: (Max + Min) - Value.
 }

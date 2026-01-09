@@ -6,6 +6,7 @@
 \usage{
 formr_sessions(
   run_name,
+  session_codes = NULL,
   active = NULL,
   testing = NULL,
   limit = 1000,
@@ -15,11 +16,14 @@ formr_sessions(
 \arguments{
 \item{run_name}{Name of the run.}
 
+\item{session_codes}{Optional. A character vector of session codes to fetch specific details for.
+If provided, \code{active}, \code{limit}, and \code{offset} are ignored.}
+
 \item{active}{Filter: TRUE for ongoing, FALSE for finished, NULL for all.}
 
 \item{testing}{Filter: TRUE for test sessions, FALSE for real users, NULL for all.}
 
-\item{limit}{Pagination limit (default 100).}
+\item{limit}{Pagination limit (default 1000).}
 
 \item{offset}{Pagination offset (default 0).}
 }
@@ -27,5 +31,6 @@ formr_sessions(
 A combined tibble of session states and details.
 }
 \description{
-Returns a tidy data frame of sessions.
+Returns a tidy data frame of sessions. Can either list all sessions (with filtering)
+or fetch specific sessions by their codes.
 }

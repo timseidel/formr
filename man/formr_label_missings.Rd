@@ -2,14 +2,7 @@
 % Please edit documentation in R/data_processing.R
 \name{formr_label_missings}
 \alias{formr_label_missings}
-\title{Tag Missing Values
-!!Currently disabled!!
-Uses \code{item_displays} log to distinguish between:
-\itemize{
-\item \strong{Shown but skipped} (User saw it, didn't answer)
-\item \strong{Hidden} (Logic skipped it)
-\item \strong{Not Reached} (User quit before this page)
-}}
+\title{Tag Missing Values (Placeholder)}
 \usage{
 formr_label_missings(results, item_displays)
 }
@@ -19,8 +12,9 @@ formr_label_missings(results, item_displays)
 \item{item_displays}{Display log tibble.}
 }
 \description{
-Tag Missing Values
-!!Currently disabled!!
+This function is currently disabled/under construction.
+}
+\details{
 Uses \code{item_displays} log to distinguish between:
 \itemize{
 \item \strong{Shown but skipped} (User saw it, didn't answer)
@@ -28,3 +22,4 @@ Uses \code{item_displays} log to distinguish between:
 \item \strong{Not Reached} (User quit before this page)
 }
 }
+\keyword{internal}

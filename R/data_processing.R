@@ -103,20 +103,18 @@ formr_recognise <- function(item_list, results) {
 #' @param item_displays Optional display log tibble.
 #' @param remove_test_sessions Filter out sessions with "XXX".
 #' @param tag_missings Tag NAs if display data is present.
-#' @param fallback_max Max value for Likert reversal (default 5).
 #' @export
 formr_post_process_results <- function(run_name = NULL,
 																			 item_list = NULL, 
 																			 results = NULL, 
 																			 item_displays = NULL,
 																			 remove_test_sessions = TRUE,
-																			 tag_missings = !is.null(item_displays),
-																			 fallback_max = 5) {
+																			 tag_missings = !is.null(item_displays)) {
 	
 	# --- 1. EXPLICIT MODE: Fetch if run_name is provided ---
 	if (!is.null(run_name)) {
 		message("[START] Auto-mode: Fetching data and structure for run '", run_name, "'...")
-		if(is.null(results)) results <- formr_results(run_name)
+		if(is.null(results)) results <- formr_results(run_name, join = TRUE)
 		if(is.null(item_list)) item_list <- formr_run_structure(run_name)
 	}
 	# -------------------------------------------------------
@@ -151,7 +149,7 @@ formr_post_process_results <- function(run_name = NULL,
 	results <- formr_recognise(item_list, results)
 	
 	# Reversal
-	results <- formr_reverse(results, item_list, fallback_max)
+	results <- formr_reverse(results, item_list)
 	
 	# Aggregation
 	results <- formr_aggregate(results, item_list)
@@ -166,51 +164,71 @@ formr_post_process_results <- function(run_name = NULL,
 
 #' Reverse Items
 #' 
-#' Reverses items ending in 'R' (e.g. `extra_1R`). 
-#' Uses metadata to find max value, or falls back to `fallback_max`.
+#' Reverses items ending in 'R' (e.g. `extra_1R`) using metadata bounds.
+#' Uses the robust formula: (Max + Min) - Value.
 #' 
 #' @param results Results tibble.
 #' @param item_list Metadata tibble.
-#' @param fallback_max Default max for reversal if unknown (default 5).
 #' @export
-formr_reverse <- function(results, item_list = NULL, fallback_max = 5) {
+formr_reverse <- function(results, item_list = NULL) {
+	
+	if (is.null(item_list)) {
+		warning("formr_reverse: No item_list provided. Skipping reversal.")
+		return(results)
+	}
 	
 	item_names <- names(results)
-	# Detect items ending in number + R (e.g. "bfi_10R", "scale2R")
+	# Detect items ending in number + R (e.g. "bfi_10R")
 	reversed_vars <- item_names[stringr::str_detect(item_names, "(?i)[a-z0-9_]+?[0-9]+R$")]
 	
 	for (var in reversed_vars) {
 		# Skip if not numeric/labelled
 		if(!is.numeric(results[[var]]) && !inherits(results[[var]], "haven_labelled")) next
 		
-		# 1. Determine Max
-		item_max <- fallback_max
+		# --- Fetch Min AND Max from Metadata ---
+		item_max <- NULL
+		item_min <- NULL
 		
-		# Try to get max from metadata choices
-		if(!is.null(item_list)) {
-			meta <- item_list[item_list$name == var, ]
-			if(nrow(meta) > 0 && !is.null(meta$choices[[1]])) {
-				# Check explicit choices
-				choices <- unlist(meta$choices[[1]])
-				vals <- suppressWarnings(as.numeric(choices))
-				if(!all(is.na(vals))) item_max <- max(vals, na.rm = TRUE)
+		meta <- item_list[item_list$name == var, ]
+		if(nrow(meta) > 0 && !is.null(meta$choices[[1]])) {
+			choices <- unlist(meta$choices[[1]])
+			vals <- suppressWarnings(as.numeric(choices))
+			
+			if(!all(is.na(vals))) {
+				item_max <- max(vals, na.rm = TRUE)
+				item_min <- min(vals, na.rm = TRUE)
 			}
 		}
 		
-		# Heuristic update: if data > max, bump max
-		current_vals <- as.numeric(results[[var]])
-		current_max <- max(current_vals, na.rm = TRUE)
-		if (is.finite(current_max) && current_max > item_max) {
-			item_max <- current_max
+		# Fallback: If metadata lacks choices, we cannot safely reverse.
+		if (is.null(item_max) || is.null(item_min)) {
+			warning(sprintf("Item '%s': Skipped. Could not determine Min/Max from metadata.", var))
+			next
 		}
 		
-		# 2. Perform Reversal: (Max + Min) - Value
-		# Assumes Min=1. 
-		# Formula: new = (Max + 1) - old
-		results[[var]] <- (item_max + 1) - as.numeric(results[[var]])
+		# --- Consistency Check ---
+		current_vals <- as.numeric(results[[var]])
+		current_data_max <- suppressWarnings(max(current_vals, na.rm = TRUE))
+		current_data_min <- suppressWarnings(min(current_vals, na.rm = TRUE))
 		
+		# Warn if data exceeds theoretical bounds
+		if (is.finite(current_data_max) && current_data_max > item_max) {
+			warning(sprintf("Item '%s': Data max (%s) > Metadata max (%s). Using Data max.", var, current_data_max, item_max))
+			item_max <- current_data_max
+		}
+		if (is.finite(current_data_min) && current_data_min < item_min) {
+			warning(sprintf("Item '%s': Data min (%s) < Metadata min (%s). Using Data min.", var, current_data_min, item_min))
+			item_min <- current_data_min
+		}
+		
+		# Formula: (Max + Min) - Value
+		reversal_const <- item_max + item_min
+		results[[var]] <- reversal_const - as.numeric(results[[var]])
+		
+		# Attach attributes for transparency
 		attr(results[[var]], "reversed") <- TRUE
-		attr(results[[var]], "reversal_max") <- item_max
+		attr(results[[var]], "reversal_const") <- reversal_const
+		attr(results[[var]], "reversal_range") <- c(item_min, item_max)
 	}
 	
 	results
@@ -231,6 +249,8 @@ formr_aggregate <- function(results, item_list = NULL, min_items = 2) {
 	# Regex to find stems (e.g. bfi_1 -> bfi)
 	stems <- stringr::str_match(item_names, "^([a-zA-Z0-9_]+?)[_]?\\d+[R]?$")[, 2]
 	unique_stems <- unique(stats::na.omit(stems))
+	# Exclude Shuffles
+	unique_stems <- unique_stems[!grepl("^shuffle", unique_stems)]
 	
 	for (scale in unique_stems) {
 		if (scale %in% names(results)) next 
@@ -240,19 +260,15 @@ formr_aggregate <- function(results, item_list = NULL, min_items = 2) {
 		
 		if (length(scale_cols) < min_items) next
 		
-		# Only aggregate if the data is actually numeric.
-		# We must handle 'haven_labelled' specifically, as it can wrap character data too.
+		# Validation: Only aggregate if the data is actually numeric.
 		safe_cols <- vapply(results[scale_cols], function(x) {
 			if (is.numeric(x)) return(TRUE)
-			# If labelled, check if the *underlying* vector is numeric
 			if (inherits(x, "haven_labelled")) return(is.numeric(unclass(x)))
 			return(FALSE)
 		}, logical(1))
 		
-		# Only use the columns that passed the check
 		valid_cols <- scale_cols[safe_cols]
 		
-		# If we dropped too many columns, skip this scale
 		if (length(valid_cols) < min_items) {
 			warning(sprintf("Skipped aggregating '%s': Items contain text/non-numeric data.", scale))
 			next
@@ -260,18 +276,25 @@ formr_aggregate <- function(results, item_list = NULL, min_items = 2) {
 		
 		message(sprintf("[INFO] Aggregating '%s' (%d items)", scale, length(valid_cols)))
 		
-		# Strip labels safely for the math part
-		mat <- as.matrix(sapply(results[valid_cols], as.numeric))
-		results[[scale]] <- rowMeans(mat, na.rm = TRUE)
 		
-		attr(results[[scale]], "scale_items") <- valid_cols
-		attr(results[[scale]], "label") <- paste(length(valid_cols), "items aggregated (mean)")
+		# Extract the data for this specific scale
+		subset_df <- results[valid_cols]
+		
+		# Delegate calculation and metadata documentation to the utility function.
+		subset_df_numeric <- as.data.frame(lapply(subset_df, as.numeric))
+		
+		results[[scale]] <- aggregate_and_document_scale(
+			items = subset_df_numeric, 
+			stem = scale
+		)
 	}
 	results
 }
 
-#' Tag Missing Values
-#' !!Currently disabled!!
+#' Tag Missing Values (Placeholder)
+#'
+#' This function is currently disabled/under construction.
+#'
 #' Uses `item_displays` log to distinguish between:
 #' - **Shown but skipped** (User saw it, didn't answer)
 #' - **Hidden** (Logic skipped it)
@@ -279,69 +302,11 @@ formr_aggregate <- function(results, item_list = NULL, min_items = 2) {
 #' 
 #' @param results Results tibble.
 #' @param item_displays Display log tibble.
-#' @export
+#' @keywords internal
 formr_label_missings <- function(results, item_displays) {
-	# Requires `haven` for tagged NAs
-	if (is.null(item_displays) || nrow(item_displays) == 0) return(results)
 	
 	# TODO: Re-implement robust mapping when `item_displays` structure is confirmed via API V1.
 	# The legacy logic relied on specific column names ('shown', 'hidden') that might change.
 	
-	results
-}
-
-#' Simulate Data from Metadata
-#' 
-#' Generates dummy data based on item types and choices.
-#' 
-#' @param item_list Metadata tibble.
-#' @param n Number of participants to simulate.
-#' @export
-formr_simulate_from_items <- function(item_list, n = 100) {
-	
-	# Create skeleton
-	df <- tibble::tibble(session = paste0("dummy_", 1:n))
-	
-	for (i in seq_len(nrow(item_list))) {
-		item <- item_list[i, ]
-		name <- item$name
-		type <- item$type
-		choices <- if(!is.null(item$choices)) item$choices[[1]] else NULL
-		
-		val <- rep(NA, n)
-		
-		# Simulation Logic
-		if (!is.null(choices)) {
-			# Sample from choice keys
-			keys <- names(choices)
-			if(is.null(keys)) keys <- seq_along(choices) # Implicit keys
-			
-			# Prefer numeric if keys look numeric
-			num_keys <- suppressWarnings(as.numeric(keys))
-			if(!any(is.na(num_keys))) keys <- num_keys
-			
-			val <- sample(keys, n, replace = TRUE)
-			
-		} else if (type == "number") {
-			val <- round(runif(n, 0, 100), 1)
-		} else if (type == "range") {
-			val <- sample(1:100, n, replace = TRUE)
-		} else if (type %in% c("text", "textarea")) {
-			val <- paste("Text for", name, 1:n)
-		} else if (type == "email") {
-			val <- paste0("user", 1:n, "@test.com")
-		} else if (type %in% c("date", "datetime")) {
-			val <- Sys.time() - runif(n, 0, 86400 * 30)
-		}
-		
-		if (type %in% c("note", "submit", "calculate")) next
-		
-		df[[name]] <- val
-	}
-	
-	# Fake metadata
-	df$created <- Sys.time() - runif(n, 0, 10000)
-	df$ended <- df$created + runif(n, 60, 600)
-	
-	df
+	stop("formr_label_missings is currently not implemented.")
 }
