@@ -8,11 +8,11 @@
 <title>formr survey framework accompanying R package • formr</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
-<link href="deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="formr survey framework accompanying R package">
-<meta name="description" content="The formr R package provides a few convenience functions that may be useful to the users of formr (formr.org), an online survey framework which heavily relies on R via openCPU. Some of the functions are for conveniently generating individual feedback graphics, some are just shorthands to make certain common operations in formr more palatable to R novices.">
-<meta property="og:description" content="The formr R package provides a few convenience functions that may be useful to the users of formr (formr.org), an online survey framework which heavily relies on R via openCPU. Some of the functions are for conveniently generating individual feedback graphics, some are just shorthands to make certain common operations in formr more palatable to R novices.">
+<meta name="description" content="The formr R package provides a few convenience functions that may be useful to the users of formr (formr.org), an online survey framework which heavily relies on R via openCPU. Features include a robust API client for project management (initializing, pushing, and syncing survey assets), session control (creating, tracking, and modifying user sessions), and data retrieval. Some of the functions are for conveniently generating individual feedback graphics, some are just shorthands to make certain common operations in formr more palatable to R novices.">
+<meta property="og:description" content="The formr R package provides a few convenience functions that may be useful to the users of formr (formr.org), an online survey framework which heavily relies on R via openCPU. Features include a robust API client for project management (initializing, pushing, and syncing survey assets), session control (creating, tracking, and modifying user sessions), and data retrieval. Some of the functions are for conveniently generating individual feedback graphics, some are just shorthands to make certain common operations in formr more palatable to R novices.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">formr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.11.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.12.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,6 +32,16 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-tutorials" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Tutorials</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-tutorials">
+<li><h6 class="dropdown-header" data-toc-skip>Basics</h6></li>
+    <li><a class="dropdown-item" href="articles/getting-started.html">Getting Started</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Advanced</h6></li>
+    <li><a class="dropdown-item" href="articles/manage-your-runs.html">Manage Surveys &amp; Runs</a></li>
+  </ul>
+</li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -46,28 +56,140 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="formr">formr<a class="anchor" aria-label="anchor" href="#formr"></a>
+<div class="page-header"><h1 id="formr-r-client-for-formrorg">formr: R Client for formr.org<a class="anchor" aria-label="anchor" href="#formr-r-client-for-formrorg"></a>
 </h1></div>
-<p><!-- badges: start --> <a href="https://CRAN.R-project.org/package=formr" class="external-link"><img src="https://www.r-pkg.org/badges/version/formr" alt="CRAN status"></a> <a href="https://app.codecov.io/gh/rubenarslan/formr" class="external-link"><img src="https://codecov.io/gh/rubenarslan/formr/graph/badge.svg" alt="Codecov test coverage"></a> <!-- badges: end --></p>
+<p><a href="https://CRAN.R-project.org/package=formr" class="external-link"><img src="https://www.r-pkg.org/badges/version/formr" alt="CRAN status"></a> <a href="https://app.codecov.io/gh/rubenarslan/formr" class="external-link"><img src="https://codecov.io/gh/rubenarslan/formr/graph/badge.svg" alt="Codecov test coverage"></a></p>
+<p>The <strong>formr</strong> R package is the official companion to the <a href="https://formr.org" class="external-link">formr survey framework</a>.</p>
+<p>While the formr-package is designed to provide useful helper functions <em>inside</em> formr surveys (for feedback plots and logic), <strong>version 0.12.0</strong> introduces a robust API client. You can now use R to manage your studies locally, sync files, version control your surveys, and fetch results securely.</p>
 <div class="section level2">
-<h2 id="the-accompanying-r-package-for-the-study-framework-formr">The accompanying R package for the study framework <a href="https://github.com/rubenarslan/formr.org" class="external-link">formr</a>
-<a class="anchor" aria-label="anchor" href="#the-accompanying-r-package-for-the-study-framework-formr"></a>
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
-<p>The formr R package provides a few convenience functions that may be useful to the users of formr (<a href="https://formr.org" class="external-link">formr.org</a>), an online survey framework which heavily relies on R via <a href="https://github.com/jeroenooms/opencpu" class="external-link">openCPU</a>. Some functions may be useful to others too.</p>
-<p>Some of the functions conveniently generate individual feedback graphics, some are just shorthands to make certain common operations in formr more palatable to R novices. A large number of functions help connect to formr, extract data, correctly type data (dates, numbers, text etc.), automatically aggregate items of a scale and so on.</p>
-<p>The R package can be used inside formr.org, it is always loaded by default.</p>
+<p>Full documentation is available at <strong><a href="https://rubenarslan.github.io/formr" class="external-link">rubenarslan.github.io/formr</a></strong>.</p>
 </div>
 <div class="section level2">
-<h2 id="documentation">documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p><a href="https://rubenarslan.github.io/formr" class="external-link uri">https://rubenarslan.github.io/formr</a></p>
+<blockquote>
+<p><strong>⚠️ Compatibility Note:</strong> Version 0.12.0 introduces breaking changes to support the new formr API (v1). If your formr server instance does not yet support the v1 API, you should install the previous version (0.11.1).</p>
+</blockquote>
+<p><strong>To install the latest version (v0.12.0+):</strong></p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"rubenarslan/formr"</span><span class="op">)</span></span></code></pre></div>
+<p><strong>To install the legacy version (compatible with older servers):</strong></p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"rubenarslan/formr@v0.11.1"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="install">install<a class="anchor" aria-label="anchor" href="#install"></a>
+<h2 id="authentication">Authentication<a class="anchor" aria-label="anchor" href="#authentication"></a>
 </h2>
-<p>If you want to install the R package locally (e.g. to connect to formr and fetch the data in a nice format for you), run:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"remotes"</span>)</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"rubenarslan/formr"</span>)</span></code></pre></div>
+<p>To use the API features (fetching results, managing files), you must first authenticate. You can store your credentials securely in your system’s keyring so you don’t have to type them every time.</p>
+<ol style="list-style-type: decimal">
+<li>Log in to formr.org and go to <strong>Account &gt; API Settings</strong>.</li>
+<li>Create a Client ID and Secret (or generate a Personal Access Token).</li>
+</ol>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://rubenarslan.github.io/formr/">formr</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Store your credentials once</span></span>
+<span><span class="co"># This saves them securely in your OS credential store</span></span>
+<span><span class="fu"><a href="reference/formr_store_keys.html">formr_store_keys</a></span><span class="op">(</span></span>
+<span>  host <span class="op">=</span> <span class="st">"https://formr.org"</span>, <span class="co"># or the URL of your instance</span></span>
+<span>  client_id <span class="op">=</span> <span class="st">"YOUR_CLIENT_ID"</span>, </span>
+<span>  client_secret <span class="op">=</span> <span class="st">"YOUR_CLIENT_SECRET"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Then, in all of your scripts, simply run:</span></span>
+<span><span class="fu"><a href="reference/formr_api_authenticate.html">formr_api_authenticate</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<div class="section level4">
+<h4 id="you-can-use-the-api-within-your-runs-r-code">You can use the API within your runs R-Code.<a class="anchor" aria-label="anchor" href="#you-can-use-the-api-within-your-runs-r-code"></a>
+</h4>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Simply run:</span></span>
+<span><span class="fu"><a href="reference/formr_api_authenticate.html">formr_api_authenticate</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level2">
+<h2 id="fetching--processing-results">Fetching &amp; Processing Results<a class="anchor" aria-label="anchor" href="#fetching--processing-results"></a>
+</h2>
+<p>The package provides tools to fetch data from complex runs and automatically join survey results, handle randomization (shuffles), and type items.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># 1. Fetch results from a run</span></span>
+<span><span class="co"># join = TRUE automatically merges multiple surveys and shuffles by session</span></span>
+<span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/formr_results.html">formr_results</a></span><span class="op">(</span><span class="st">"my-run-name"</span>, join <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 2. Get the run structure (items, choices, types)</span></span>
+<span><span class="va">items</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/formr_run_structure.html">formr_run_structure</a></span><span class="op">(</span><span class="st">"my-run-name"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 3. Post-process</span></span>
+<span><span class="co"># This handles type conversion, reverse-scoring, and aggregation for you.</span></span>
+<span><span class="va">cleaned_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/formr_post_process_results.html">formr_post_process_results</a></span><span class="op">(</span><span class="st">"my-run-name"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Your data is now ready for analysis!</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cleaned_data</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="study-management-pushpull">Study Management (Push/Pull)<a class="anchor" aria-label="anchor" href="#study-management-pushpull"></a>
+</h2>
+<p>You can now develop surveys and runs locally (using Excel/JSON/RMarkdown) and sync them to the server. This allows you to use Git for version control.</p>
+<div class="section level3">
+<h3 id="backing-up-a-study">Backing up a study<a class="anchor" aria-label="anchor" href="#backing-up-a-study"></a>
+</h3>
+<p>Download everything—results, assets, survey items, and run structure—to a local folder.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/formr_backup_run.html">formr_backup_run</a></span><span class="op">(</span><span class="st">"my-run-name"</span>, dir <span class="op">=</span> <span class="st">"backup_folder"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="developing-locally">Developing locally<a class="anchor" aria-label="anchor" href="#developing-locally"></a>
+</h3>
+<p>You can pull a project structure, make edits to Excel files or CSS locally, and push them back.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Initialize/Sync local folder with server state</span></span>
+<span><span class="fu"><a href="reference/formr_pull_project.html">formr_pull_project</a></span><span class="op">(</span><span class="st">"my-run-name"</span>, dir <span class="op">=</span> <span class="st">"my_project"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># ... Make changes to surveys/my-survey.xlsx or css/custom.css ...</span></span>
+<span></span>
+<span><span class="co"># Push changes back to formr.org</span></span>
+<span><span class="fu"><a href="reference/formr_push_project.html">formr_push_project</a></span><span class="op">(</span><span class="st">"my-run-name"</span>, dir <span class="op">=</span> <span class="st">"my_project"</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level2">
+<h2 id="workflow-3-session-management">Workflow 3: Session Management<a class="anchor" aria-label="anchor" href="#workflow-3-session-management"></a>
+</h2>
+<p>Control participants programmatically. Useful for automated testing or managing users.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Create a test session</span></span>
+<span><span class="fu"><a href="reference/formr_create_session.html">formr_create_session</a></span><span class="op">(</span><span class="st">"my-run-name"</span>, testing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Find a specific session</span></span>
+<span><span class="va">session_info</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/formr_sessions.html">formr_sessions</a></span><span class="op">(</span><span class="st">"my-run-name"</span>, session_codes <span class="op">=</span> <span class="st">"..."</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Move a user to a specific position in the run</span></span>
+<span><span class="fu"><a href="reference/formr_session_action.html">formr_session_action</a></span><span class="op">(</span><span class="st">"my-run-name"</span>, session_codes <span class="op">=</span> <span class="st">"..."</span>, action <span class="op">=</span> <span class="st">"move_to_position"</span>, position <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="helper-functions-inside-formr">Helper Functions (Inside formr)<a class="anchor" aria-label="anchor" href="#helper-functions-inside-formr"></a>
+</h2>
+<p>The package contains the utility functions used <em>inside</em> formr’s OpenCPU environment for dynamic feedback and logic:</p>
+<ul>
+<li>
+<strong>Logic Shorthands:</strong> <code><a href="reference/time_passed.html">time_passed()</a></code>, <code>%contains%</code>, <code><a href="reference/if_na.html">if_na()</a></code>.</li>
+<li>
+<strong>Feedback Plots:</strong> <code><a href="reference/qplot_on_normal.html">qplot_on_normal()</a></code>, <code><a href="reference/qplot_on_bar.html">qplot_on_bar()</a></code>.</li>
+<li>
+<strong>Markdown Helpers:</strong> <code><a href="reference/formr_render_commonmark.html">formr_render_commonmark()</a></code>.</li>
+</ul>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Example: Check if a string contains a word</span></span>
+<span><span class="st">"apple, banana"</span> <span class="op"><a href="reference/grapes-contains-grapes.html">%contains%</a></span> <span class="st">"apple"</span> <span class="co"># TRUE</span></span>
+<span></span>
+<span><span class="co"># Example: Feedback text logic</span></span>
+<span><span class="fu"><a href="reference/feedback_chunk.html">feedback_chunk</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Low"</span>, <span class="st">"Average"</span>, <span class="st">"High"</span><span class="op">)</span><span class="op">)</span> <span class="co"># Returns "Average"</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
+</h2>
+<p>MIT</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="license">
@@ -89,7 +211,7 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Ruben Arslan <br><small class="roles"> Author, maintainer </small>  </li>
+<li>Ruben Arslan <br><small class="roles"> Author, maintainer </small>   </li>
 </ul>
 </div>
 
@@ -104,7 +226,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer>

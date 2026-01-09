@@ -13,3 +13,4 @@ repomix.config.json
 .Renviron
 TEMP_TESTING.R
 .DS_Store
+inst/doc

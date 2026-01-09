@@ -1,3 +1,8 @@
+# formr 0.12.0
+
+* Introduces major changes to work with formrs new API (v1)
+* TODO: DESCRIBE CHANGES
+
 # formr 0.11.1
 
 * Update formr_store_keys to accept secret and email as arguments.
