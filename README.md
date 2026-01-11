@@ -22,7 +22,7 @@ They are available at **[rubenarslan.github.io/formr](https://rubenarslan.github
 
 <br>
 
-## Installation
+## Installation (NOTE: THE COMPATABILITY WILL BE FIXED IN THE FULL RELEASE)
 
 > **⚠️ Compatibility Note:** Version 0.12.0 introduces breaking changes to support the new formr API (v1). If your formr server instance does not yet support the v1 API, you should install the previous version (0.11.1).
 
@@ -57,7 +57,7 @@ formr_store_keys(
 )
 
 # Then, in all of your scripts, simply run:
-formr_api_authenticate()
+formr_api_authenticate(host = "https://formr.org") 
 ```
 
 #### You can use the API within your runs R-Code. 

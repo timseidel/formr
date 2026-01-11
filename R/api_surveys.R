@@ -95,6 +95,7 @@ formr_survey_structure <- function(survey_name, format = "json", file_path = NUL
 			if (!is.null(x[[field]])) x[[field]] <- list(x[[field]]) else x[[field]] <- list(NULL) 
 		}
 		if (!is.null(x$value)) x$value <- as.character(x$value)
+		if (!is.null(x$type_options)) x$type_options <- as.character(x$type_options)
 		x <- lapply(x, function(val) if (is.null(val)) NA else val)
 		return(tibble::as_tibble(x))
 	}
@@ -138,8 +139,7 @@ formr_upload_survey <- function(file_path = NULL, survey_name = NULL, google_she
 		endpoint = paste0("surveys/", survey_name),
 		method = "POST",
 		body = body,
-		# Force multipart if we have a file, otherwise json
-		encode = if (!is.null(file_path)) "multipart" else "json"
+		encode = "multipart" 
 	)
 	
 	message(sprintf("[SUCCESS] Survey '%s' processed successfully.", res$name))

@@ -22,7 +22,7 @@ formr_post_process_results(
 
 \item{item_displays}{Optional display log tibble.}
 
-\item{remove_test_sessions}{Filter out sessions with "XXX".}
+\item{remove_test_sessions}{Filter out sessions marked as testing.}
 
 \item{tag_missings}{Tag NAs if display data is present.}
 }

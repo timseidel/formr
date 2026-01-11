@@ -1,0 +1,133 @@
+---
+title: "Fetch & Process Results"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Fetch & Process Results}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(formr)
+```
+
+One of the strongest features of the `formr` package is the ability to create a reproducible data import pipeline. Instead of manually downloading CSVs from a website, renaming columns, and calculating scales in a messy script, you can fetch, merge, and clean your data in a few lines of code.
+
+## 1. Fetching Data
+
+The primary function for retrieving data is `formr_results()`.
+
+### Basic Usage
+
+By default, `formr_results` fetches all the surveys currently in use and all the shuffle units ever associated with a run.
+
+```{r, eval = FALSE}
+# Fetch all data for a run
+raw_data <- formr_results("my-study-name")
+```
+
+If your run contains multiple surveys (e.g., a "Baseline" and a "Diary"), the function returns a **named list** of tibbles, one for each survey.
+
+### Automatic Joining (`join = TRUE`)
+
+In most analysis scenarios, you want a single "wide" dataset where one row represents one session. Setting `join = TRUE` handles this automatically.
+
+```{r, eval = FALSE}
+# Fetch and merge everything by session ID
+joined_data <- formr_results("my-study-name", join = TRUE)
+```
+
+**What happens during the join?**
+
+1.  **Merging:** Surveys are full-joined by the `session` identifier.
+2.  **Conflict Resolution:** If variable names collide (e.g., both surveys have a variable named `created`), they are suffixed with the survey name (e.g., `created_baseline`, `created_diary`).
+3.  **Shuffles:** If your run uses randomization (Shuffles), the group assignments are automatically pivoted wide. For example, if a user was assigned to "Group A" in unit 10, you will get a column `shuffle_10` with the value "Group A".
+
+### Server-Side Filtering
+
+If your study is large-scale, involving thousands of participants, variables, and repetitions, you may want to only retrieve the data you need to save bandwidth and memory. This would also be the preferred way to get just the items that interest you when accessing results within your form run.
+
+```{r, eval = FALSE}
+# Fetch only specific surveys
+results <- formr_results("my-study-name", surveys = c("survey_1", "survey_2"))
+
+# Fetch specific items (columns)
+results <- formr_results("my-study-name", item_names = c("age", "gender", "extraversion_1"))
+```
+
+## 2. The Processing Pipeline
+
+Statistical analysis of raw data from the server often requires further processing.
+
+The `formr_post_process_results()` function transforms this raw data into an analysis-ready format using the study's metadata.
+
+```{r, eval = FALSE}
+# The "Magic" Command
+cleaned_data <- formr_post_process_results("my-study-name")
+```
+
+This single function wrapper performs four major steps:
+
+1.  **Fetches Metadata:** It downloads the survey properties (item types, choice lists) to know *how* to process the data.
+2.  **Type Recognition:** Converts strings to Dates, and choice-based numbers to Factors with correct labels.
+3.  **Reverse Coding:** Automatically reverses items ending in `R`.
+4.  **Aggregation:** Automatically computes mean scores for scale items.
+
+### Step-by-Step Breakdown
+
+If you prefer manual control, you can run these steps individually.
+
+#### A. Type Recognition (`formr_recognise`)
+
+Uses the item metadata to assign classes.
+
+-   **Choice items:** Converted to `haven_labelled` or factors. Labels (e.g., "Strongly Agree") are attached to values (e.g., 5).
+-   **Dates:** Converted to `POSIXct`.
+
+```{r, eval = FALSE}
+# Manual Type Recognition
+items_nested <- formr_run_structure("my-study-name") # Get metadata
+items_flat <- formr:::.extract_items_from_run(items_nested)
+raw <- formr_results("my-study-name", join = TRUE) # Get data
+
+step1_data <- formr_recognise(item_list = items_flat, results = raw)
+```
+
+#### B. Reverse Coding (`formr_reverse`)
+
+Looks for items ending in `R` (e.g., `neuroticism_3R`). It determines the minimum and maximum possible values from the survey metadata (the "choices" list) and applies the formula:
+
+$$\text{New} = (\text{Max} + \text{Min}) - \text{Old}$$
+
+```{r, eval = FALSE}
+# Manual Reverse Coding
+step2_data <- formr_reverse(results = step1_data, item_list = items_flat)
+```
+
+*Note: Attributes are added to the column (e.g., `reversal_const`) so you can verify the transformation.*
+
+#### C. Aggregation (`formr_aggregate`)
+
+Calculates mean scores for items sharing a common "stem".
+For example, if you have `extra_1`, `extra_2`, and `extra_3R`, the function detects the stem `extra`, calculates the row-mean, and creates a new column `extra`.
+
+```{r, eval = FALSE}
+# Manual Aggregation
+step3_data <- formr_aggregate(results = step2_data, item_list = items_flat)
+```
+
+## 3. Handling Test Sessions
+
+By default, `formr_post_process_results` removes test sessions (sessions containing "XXX" in their code). You can keep them if you are debugging:
+
+```{r, eval = FALSE}
+# Keep test users
+debug_data <- formr_post_process_results("my-study-name", remove_test_sessions = FALSE)
+```

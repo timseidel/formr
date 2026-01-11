@@ -24,9 +24,23 @@ navbar:
         - text: "Getting Started"
           href: articles/getting-started.html
         - text: "------------------"
-        - text: "Advanced"
-        - text: "Manage Surveys & Runs"
+        - text: "Project Management"
+        - text: "Manage your Studies (Workflow)"
+          href: articles/manage-your-studies.html
+        - text: "Manage your Surveys"
+          href: articles/manage-your-surveys.html
+        - text: "Manage your Files"
+          href: articles/manage-your-files.html
+        - text: "------------------"
+        - text: "Run Administration"
+        - text: "Manage your Runs"
           href: articles/manage-your-runs.html
+        - text: "Manage your Sessions"
+          href: articles/manage-your-sessions.html
+        - text: "------------------"
+        - text: "Analysis"
+        - text: "Fetch & Process Results"
+          href: articles/fetch-and-process-results.html
 
 reference:
   - title: Authentication & Configuration
@@ -159,7 +173,20 @@ articles:
     contents:
       - getting-started
   
-  - title: "Manage your surveys and Runs"
-    desc: "Deep dives into how to make run and management quick and convenient"
+  - title: "Project Management (Local <-> Server)"
+    desc: "How to sync your surveys, files, and settings using the local development workflow"
+    contents:
+      - manage-your-studies
+      - manage-your-surveys
+      - manage-your-files
+
+  - title: "Run Administration"
+    desc: "Controlling the run flow and managing participants"
     contents:
       - manage-your-runs
+      - manage-your-sessions
+
+  - title: "Data Analysis"
+    desc: "Fetching, merging, and cleaning your data"
+    contents:
+      - fetch-and-process-results

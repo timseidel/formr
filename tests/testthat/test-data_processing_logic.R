@@ -116,11 +116,15 @@ test_that("formr_post_process_results works correctly", {
 	}
 	
 	# 3. Run Function
-	processed_results <- formr_post_process_results(
-		item_list = items, 
-		results = results, 
-		item_displays = item_displays,
-		tag_missings = FALSE 
+	# We expect a warning because we are providing no run_name (Offline Mode)
+	expect_warning(
+		processed_results <- formr_post_process_results(
+			item_list = items, 
+			results = results, 
+			item_displays = item_displays,
+			tag_missings = FALSE 
+		),
+		"Falling back to 'XXX' heuristic"
 	)
 	
 	# 4. Assertions

@@ -101,7 +101,7 @@ formr_recognise <- function(item_list, results) {
 #' @param item_list Metadata tibble OR a Run Structure list. Required if `run_name` is NULL.
 #' @param results Results tibble. Required if `run_name` is NULL.
 #' @param item_displays Optional display log tibble.
-#' @param remove_test_sessions Filter out sessions with "XXX".
+#' @param remove_test_sessions Filter out sessions marked as testing.
 #' @param tag_missings Tag NAs if display data is present.
 #' @export
 formr_post_process_results <- function(run_name = NULL,
@@ -117,7 +117,6 @@ formr_post_process_results <- function(run_name = NULL,
 		if(is.null(results)) results <- formr_results(run_name, join = TRUE)
 		if(is.null(item_list)) item_list <- formr_run_structure(run_name)
 	}
-	# -------------------------------------------------------
 	
 	# Validation: Ensure we have the ingredients
 	if (is.null(results)) {
@@ -128,7 +127,6 @@ formr_post_process_results <- function(run_name = NULL,
 	}
 	
 	# --- 2. Run Structure Handling ---
-	# If 'item_list' is a Run Structure (nested list), extract items.
 	if (is.list(item_list) && "units" %in% names(item_list)) {
 		message("[INFO] Extracting items from Run Structure...")
 		item_list <- .extract_items_from_run(item_list)
@@ -139,9 +137,51 @@ formr_post_process_results <- function(run_name = NULL,
 	
 	# Filter Test Sessions
 	if (remove_test_sessions && "session" %in% names(results)) {
-		results <- results[!grepl("XXX", results$session), ]
-		if (!is.null(item_displays) && "session" %in% names(item_displays)) {
-			item_displays <- item_displays[!grepl("XXX", item_displays$session), ]
+		
+		used_api_filter <- FALSE
+		test_codes <- character(0)
+		
+		# STRATEGY A: Fetch Source of Truth (API)
+		if (!is.null(run_name)) {
+			tryCatch({
+				# Fetch only sessions flagged as testing=TRUE
+				# limit=50000 acts as a safety cap for large studies to avoid pagination overhead
+				test_meta <- formr_sessions(run_name, testing = TRUE, limit = 50000)
+				
+				# Handle potential column naming (API often returns 'code', mapped to 'session')
+				if ("code" %in% names(test_meta)) {
+					test_codes <- unique(test_meta$code)
+				} else if ("session" %in% names(test_meta)) {
+					test_codes <- unique(test_meta$session)
+				}
+				
+				used_api_filter <- TRUE
+				if (length(test_codes) > 0) {
+					message(sprintf("[INFO] Filtering %d test session(s) based on server metadata.", length(test_codes)))
+				}
+				
+			}, error = function(e) {
+				warning("[WARNING] Failed to fetch session metadata: ", e$message)
+				# Fall through to Strategy B
+			})
+		} else {
+			warning("[WARNING] No 'run_name' provided. Falling back to 'XXX' heuristic for test session filtering.")
+		}
+		
+		# STRATEGY B: Apply Filter (API or Fallback)
+		if (used_api_filter) {
+			# Filter based on known test codes
+			results <- results[!results$session %in% test_codes, ]
+			if (!is.null(item_displays) && "session" %in% names(item_displays)) {
+				item_displays <- item_displays[!item_displays$session %in% test_codes, ]
+			}
+		} else {
+			# Fallback: "Magic String" matching
+			# This logic is kept for offline processing or API failures
+			results <- results[!grepl("XXX", results$session), ]
+			if (!is.null(item_displays) && "session" %in% names(item_displays)) {
+				item_displays <- item_displays[!grepl("XXX", item_displays$session), ]
+			}
 		}
 	}
 	

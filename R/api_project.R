@@ -368,17 +368,14 @@ sync_run_settings <- function(run_name, dir) {
 	for (unit in struct$units) {
 		if (identical(unit$type, "Survey")) {
 			survey_name <- NULL
-			if (!is.null(unit$description) && nzchar(unit$description)) {
-				survey_name <- unit$description
-			}
-			if (is.null(survey_name) && is.list(unit$survey_data)) {
-				if (!is.null(unit$survey_data$name)) survey_name <- unit$survey_data$name
+			if (is.list(unit$survey_data) && !is.null(unit$survey_data$name)) {
+				survey_name <- unit$survey_data$name
 			}
 			
 			if (!is.null(survey_name)) {
 				dest <- file.path(survey_dir, paste0(survey_name, ".xlsx"))
 				tryCatch({
-					path <- formr_survey_structure(
+					path <- formr::formr_survey_structure(
 						survey_name = survey_name, 
 						format = "xlsx", 
 						file_path = dest

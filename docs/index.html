@@ -39,8 +39,17 @@
 <li><h6 class="dropdown-header" data-toc-skip>Basics</h6></li>
     <li><a class="dropdown-item" href="articles/getting-started.html">Getting Started</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Advanced</h6></li>
-    <li><a class="dropdown-item" href="articles/manage-your-runs.html">Manage Surveys &amp; Runs</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Project Management</h6></li>
+    <li><a class="dropdown-item" href="articles/manage-your-studies.html">Manage your Studies (Workflow)</a></li>
+    <li><a class="dropdown-item" href="articles/manage-your-surveys.html">Manage your Surveys</a></li>
+    <li><a class="dropdown-item" href="articles/manage-your-files.html">Manage your Files</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Run Administration</h6></li>
+    <li><a class="dropdown-item" href="articles/manage-your-runs.html">Manage your Runs</a></li>
+    <li><a class="dropdown-item" href="articles/manage-your-sessions.html">Manage your Sessions</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Analysis</h6></li>
+    <li><a class="dropdown-item" href="articles/fetch-and-process-results.html">Fetch &amp; Process Results</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -85,7 +94,7 @@
 <p><br></p>
 </div>
 <div class="section level2">
-<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+<h2 id="installation-note-the-compatability-will-be-fixed-in-the-full-release">Installation (NOTE: THE COMPATABILITY WILL BE FIXED IN THE FULL RELEASE)<a class="anchor" aria-label="anchor" href="#installation-note-the-compatability-will-be-fixed-in-the-full-release"></a>
 </h2>
 <blockquote>
 <p><strong>⚠️ Compatibility Note:</strong> Version 0.12.0 introduces breaking changes to support the new formr API (v1). If your formr server instance does not yet support the v1 API, you should install the previous version (0.11.1).</p>
@@ -119,7 +128,7 @@
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Then, in all of your scripts, simply run:</span></span>
-<span><span class="fu"><a href="reference/formr_api_authenticate.html">formr_api_authenticate</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="reference/formr_api_authenticate.html">formr_api_authenticate</a></span><span class="op">(</span>host <span class="op">=</span> <span class="st">"https://formr.org"</span><span class="op">)</span> </span></code></pre></div>
 <div class="section level4">
 <h4 id="you-can-use-the-api-within-your-runs-r-code">You can use the API within your runs R-Code.<a class="anchor" aria-label="anchor" href="#you-can-use-the-api-within-your-runs-r-code"></a>
 </h4>
