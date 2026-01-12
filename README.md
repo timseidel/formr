@@ -29,7 +29,7 @@ They are available at **[rubenarslan.github.io/formr](https://rubenarslan.github
 **To install the latest version (v0.12.0+):**
 ```r
 if (!requireNamespace("remotes")) install.packages("remotes")
-remotes::install_github("rubenarslan/formr")
+remotes::install_github("timseidel/formr")
 ```
 
 **To install the legacy version (compatible with older servers):**
