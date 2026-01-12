@@ -14,19 +14,20 @@ development workflow
 
 - [Manage your
   Studies](http://rubenarslan.github.io/formr/articles/manage-your-studies.md):
-- [Manage your
-  Surveys](http://rubenarslan.github.io/formr/articles/manage-your-surveys.md):
-- [Manage your
-  Files](http://rubenarslan.github.io/formr/articles/manage-your-files.md):
 
 ### Run Administration
 
-Controlling the run flow and managing participants
+Controlling the run flow and managing participants, files and surveys
+directly
 
 - [Manage your
   Runs](http://rubenarslan.github.io/formr/articles/manage-your-runs.md):
 - [Manage your
   Sessions](http://rubenarslan.github.io/formr/articles/manage-your-sessions.md):
+- [Manage your
+  Surveys](http://rubenarslan.github.io/formr/articles/manage-your-surveys.md):
+- [Manage your
+  Files](http://rubenarslan.github.io/formr/articles/manage-your-files.md):
 
 ### Data Analysis
 

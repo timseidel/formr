@@ -30,7 +30,6 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="../articles/getting-started.html">Getting Started</a></li>
-<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-tutorials" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Tutorials</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-tutorials">
@@ -50,6 +49,7 @@
     <li><a class="dropdown-item" href="../articles/fetch-and-process-results.html">Fetch &amp; Process Results</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -187,7 +187,7 @@ scale items.</li>
 <p>If you prefer manual control, you can run these steps
 individually.</p>
 <div class="section level4">
-<h4 id="a--type-recognition-formr_recognise">A. Type Recognition (<code>formr_recognise</code>)<a class="anchor" aria-label="anchor" href="#a--type-recognition-formr_recognise"></a>
+<h4 id="a--type-recognition-formr_recognise">A. Type Recognition (<code>formr_recognise()</code>)<a class="anchor" aria-label="anchor" href="#a--type-recognition-formr_recognise"></a>
 </h4>
 <p>Uses the item metadata to assign classes.</p>
 <ul>
@@ -207,7 +207,7 @@ are attached to values (e.g., 5).</li>
 <span><span class="va">step1_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_recognise.html">formr_recognise</a></span><span class="op">(</span>item_list <span class="op">=</span> <span class="va">items_flat</span>, results <span class="op">=</span> <span class="va">raw</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
-<h4 id="b--reverse-coding-formr_reverse">B. Reverse Coding (<code>formr_reverse</code>)<a class="anchor" aria-label="anchor" href="#b--reverse-coding-formr_reverse"></a>
+<h4 id="b--reverse-coding-formr_reverse">B. Reverse Coding (<code>formr_reverse()</code>)<a class="anchor" aria-label="anchor" href="#b--reverse-coding-formr_reverse"></a>
 </h4>
 <p>Looks for items ending in <code>R</code> (e.g.,
 <code>neuroticism_3R</code>). It determines the minimum and maximum
@@ -222,7 +222,7 @@ applies the formula:</p>
 transformation.</em></p>
 </div>
 <div class="section level4">
-<h4 id="c--aggregation-formr_aggregate">C. Aggregation (<code>formr_aggregate</code>)<a class="anchor" aria-label="anchor" href="#c--aggregation-formr_aggregate"></a>
+<h4 id="c--aggregation-formr_aggregate">C. Aggregation (<code>formr_aggregate()</code>)<a class="anchor" aria-label="anchor" href="#c--aggregation-formr_aggregate"></a>
 </h4>
 <p>Calculates mean scores for items sharing a common “stem”. For
 example, if you have <code>extra_1</code>, <code>extra_2</code>, and
@@ -238,7 +238,7 @@ calculates the row-mean, and creates a new column
 <div class="section level2">
 <h2 id="handling-test-sessions">3. Handling Test Sessions<a class="anchor" aria-label="anchor" href="#handling-test-sessions"></a>
 </h2>
-<p>By default, <code>formr_post_process_results</code> removes test
+<p>By default, <code><a href="../reference/formr_post_process_results.html">formr_post_process_results()</a></code> removes test
 sessions (sessions containing “XXX” in their code). You can keep them if
 you are debugging:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
