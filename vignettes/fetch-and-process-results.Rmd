@@ -84,7 +84,7 @@ This single function wrapper performs four major steps:
 
 If you prefer manual control, you can run these steps individually.
 
-#### A. Type Recognition (`formr_recognise`)
+#### A. Type Recognition (`formr_recognise()`)
 
 Uses the item metadata to assign classes.
 
@@ -100,7 +100,7 @@ raw <- formr_results("my-study-name", join = TRUE) # Get data
 step1_data <- formr_recognise(item_list = items_flat, results = raw)
 ```
 
-#### B. Reverse Coding (`formr_reverse`)
+#### B. Reverse Coding (`formr_reverse()`)
 
 Looks for items ending in `R` (e.g., `neuroticism_3R`). It determines the minimum and maximum possible values from the survey metadata (the "choices" list) and applies the formula:
 
@@ -113,7 +113,7 @@ step2_data <- formr_reverse(results = step1_data, item_list = items_flat)
 
 *Note: Attributes are added to the column (e.g., `reversal_const`) so you can verify the transformation.*
 
-#### C. Aggregation (`formr_aggregate`)
+#### C. Aggregation (`formr_aggregate()`)
 
 Calculates mean scores for items sharing a common "stem".
 For example, if you have `extra_1`, `extra_2`, and `extra_3R`, the function detects the stem `extra`, calculates the row-mean, and creates a new column `extra`.
@@ -125,7 +125,7 @@ step3_data <- formr_aggregate(results = step2_data, item_list = items_flat)
 
 ## 3. Handling Test Sessions
 
-By default, `formr_post_process_results` removes test sessions (sessions containing "XXX" in their code). You can keep them if you are debugging:
+By default, `formr_post_process_results()` removes test sessions (sessions containing "XXX" in their code). You can keep them if you are debugging:
 
 ```{r, eval = FALSE}
 # Keep test users

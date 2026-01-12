@@ -10,7 +10,7 @@ template:
 
 navbar:
   structure:
-    left:  [get_started, reference, articles, news]
+    left:  [get_started, articles, reference, news]
     right: [search, github, lightswitch]
   components:
     get_started:
@@ -177,14 +177,14 @@ articles:
     desc: "How to sync your surveys, files, and settings using the local development workflow"
     contents:
       - manage-your-studies
-      - manage-your-surveys
-      - manage-your-files
 
   - title: "Run Administration"
-    desc: "Controlling the run flow and managing participants"
+    desc: "Controlling the run flow and managing participants, files and surveys directly"
     contents:
       - manage-your-runs
       - manage-your-sessions
+      - manage-your-surveys
+      - manage-your-files
 
   - title: "Data Analysis"
     desc: "Fetching, merging, and cleaning your data"
