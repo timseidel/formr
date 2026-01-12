@@ -27,16 +27,16 @@ navbar:
         - text: "Project Management"
         - text: "Manage your Studies (Workflow)"
           href: articles/manage-your-studies.html
-        - text: "Manage your Surveys"
-          href: articles/manage-your-surveys.html
-        - text: "Manage your Files"
-          href: articles/manage-your-files.html
         - text: "------------------"
         - text: "Run Administration"
         - text: "Manage your Runs"
           href: articles/manage-your-runs.html
         - text: "Manage your Sessions"
           href: articles/manage-your-sessions.html
+        - text: "Manage your Surveys"
+          href: articles/manage-your-surveys.html
+        - text: "Manage your Files"
+          href: articles/manage-your-files.html
         - text: "------------------"
         - text: "Analysis"
         - text: "Fetch & Process Results"
