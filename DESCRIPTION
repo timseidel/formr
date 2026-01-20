@@ -1,17 +1,22 @@
 Package: formr
 Title: formr survey framework accompanying R package
-Description: The formr R package provides a few convenience functions
-    that may be useful to the users of formr (formr.org), an online
-    survey framework which heavily relies on R via openCPU.
-    Some of the functions are for conveniently generating individual
-    feedback graphics, some are just shorthands to make certain common
-    operations in formr more palatable to R novices.
+Description: Serves as a robust companion toolkit for the 'formr' survey 
+    framework. The package acts as a bridge between the server and 
+    a local R environment. Key features include an API interface 
+    for fetching, type-casting, and automatically scoring data, as well as 
+    a project management workflow for syncing study assets (surveys, CSS) 
+    for local editing. It also supplies functions for use within 'formr' 
+    runs to generate dynamic, personalized feedback plots and simplify 
+    survey logic.
 Authors@R: c(
     person("Ruben", "Arslan",
-    email = "rubenarslan@gmail.com",
-    role = c("aut","cre"))
+        email = "rubenarslan@gmail.com",
+        role = c("aut","cre")),
+    person("Tim B", "Seidel", 
+        email = "tim.seidel@outlook.com", 
+        role = "ctb")
     )
-Version: 0.11.3
+Version: 0.12.0
 Depends:
     R (>= 3.0.2)
 Imports:
