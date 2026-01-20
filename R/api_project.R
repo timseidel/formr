@@ -127,7 +127,7 @@ formr_api_push_project <- function(run_name, dir = ".", watch = FALSE, interval 
 					Sys.sleep(interval)
 					
 					current_state <- get_api_project_state(dir)
-					changes <- detect_changes(last_state, current_state)
+					changes <- detect_api_changes(last_state, current_state)
 					
 					if (length(changes$added) > 0 || length(changes$modified) > 0 || length(changes$deleted) > 0) {
 						# Sync Logic
@@ -227,7 +227,7 @@ handle_api_project_changes <- function(run_name, dir, changes) {
 	# 1. SETTINGS & CSS/JS
 	if (any(grepl("^(css/|js/|run_settings\\.json)", to_process))) {
 		message(" Syncing Settings...")
-		sync_api_run_settings(run_name, dir)
+		sync_run_settings(run_name, dir)
 	}
 	
 	# 2. SURVEYS

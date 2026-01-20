@@ -6,6 +6,11 @@
 \usage{
 formr_api_recognise(item_list, results)
 }
+\arguments{
+\item{item_list}{A data frame containing item metadata.}
+
+\item{results}{A data frame containing the raw results.}
+}
 \description{
 Apply Type Definitions and Labels
 }

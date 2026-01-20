@@ -12,6 +12,17 @@ formr_api_fetch_results(
   join = FALSE
 )
 }
+\arguments{
+\item{run_name}{Name of the run.}
+
+\item{surveys}{Optional character vector of survey names to filter by.}
+
+\item{session_ids}{Optional character vector of session IDs to filter by.}
+
+\item{item_names}{Optional character vector of item names to filter by.}
+
+\item{join}{Logical. If TRUE, joins the results into a single data frame.}
+}
 \description{
 Fetches raw results. Advanced users can use this if they want
 completely raw data without any type coercion or processing.

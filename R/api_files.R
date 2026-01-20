@@ -134,7 +134,7 @@ formr_api_delete_file <- function(run_name, file_name) {
 #' @export
 formr_api_delete_all_files <- function(run_name, prompt = TRUE) {
 	# 1. Fetch existing files
-	files <- formr_files(run_name)
+	files <- formr_api_files(run_name)
 	
 	if (nrow(files) == 0) {
 		message(sprintf("[INFO] No files found in run '%s'. Nothing to delete.", run_name))

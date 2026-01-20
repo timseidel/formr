@@ -6,6 +6,13 @@
 \usage{
 formr_api_aggregate(results, item_list, min_items = 2)
 }
+\arguments{
+\item{results}{A data frame/tibble containing the run results.}
+
+\item{item_list}{A data frame containing item metadata (names, types, choices).}
+
+\item{min_items}{Minimum number of valid items required to calculate a mean (default 2).}
+}
 \description{
 Aggregate Scales
 }

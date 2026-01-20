@@ -31,7 +31,10 @@ Imports:
 		commonmark,
 		rmarkdown,
 		otp,
-		keyring
+		keyring,
+		purrr,
+		readr,
+		tibble
 License: MIT + file LICENSE
 LazyData: true
 Date: 2014-12-09 12:06:54
@@ -39,6 +42,7 @@ RoxygenNote: 7.3.3
 Roxygen: list(markdown = TRUE) 
 Encoding: UTF-8
 Suggests: 
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    vcr
 Config/testthat/edition: 3
 URL: http://rubenarslan.github.io/formr/

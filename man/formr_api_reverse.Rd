@@ -6,6 +6,11 @@
 \usage{
 formr_api_reverse(results, item_list)
 }
+\arguments{
+\item{results}{A data frame containing the results.}
+
+\item{item_list}{A data frame containing item metadata.}
+}
 \description{
 Reverses numeric items ending in 'R' based on metadata bounds.
 Critically, it also updates \code{haven::labelled} attributes so that

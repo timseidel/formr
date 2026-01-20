@@ -12,3 +12,9 @@ graph_run
 ^codecov\.yml$
 .lintr
 .DS_Store
+package.json
+yarn.lock
+node_modules
+repomix.config.json
+.repomixignore
+formr_codebase.xml

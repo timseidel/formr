@@ -38,12 +38,12 @@ formr_api_backup_run <- function(run_name, dir = NULL, prompt = TRUE) {
 		jsonlite::write_json(struct, file.path(dir, "run_structure.json"), pretty = TRUE, auto_unbox = TRUE)
 		
 		# 3. Surveys (Using Shared Helper)
-		.sync_server_surveys(struct, dir = dir)
+		.sync_api_server_surveys(struct, dir = dir)
 		
 	}, error = function(e) warning("Failed to download run structure: ", e$message))
 	
 	# 4. Files (Using Shared Helper)
-	.sync_server_files(run_name, dir = dir)
+	.sync_api_server_files(run_name, dir = dir)
 	
 	# 5. Results
 	message("  Downloading results...")

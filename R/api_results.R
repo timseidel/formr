@@ -139,6 +139,11 @@ formr_api_results <- function(run_name,
 #' Fetches raw results. Advanced users can use this if they want 
 #' completely raw data without any type coercion or processing.
 #'
+#' @param run_name Name of the run.
+#' @param surveys Optional character vector of survey names to filter by.
+#' @param session_ids Optional character vector of session IDs to filter by.
+#' @param item_names Optional character vector of item names to filter by.
+#' @param join Logical. If TRUE, joins the results into a single data frame.
 #' @export
 formr_api_fetch_results <- function(run_name,
 																		surveys = NULL,
@@ -188,7 +193,7 @@ formr_api_fetch_results <- function(run_name,
 							TRUE ~ paste0("shuffle_unit_", .data$unit_id)
 						)
 					) %>%
-					dplyr::distinct(session, position_col, .keep_all = TRUE) %>% 
+					dplyr::distinct(.data$session, .data$position_col, .keep_all = TRUE) %>%
 					tidyr::pivot_wider(
 						id_cols = "session",
 						names_from = "position_col", 
@@ -218,6 +223,9 @@ formr_api_fetch_results <- function(run_name,
 }
 
 #' Apply Type Definitions and Labels
+#' 
+#' @param item_list A data frame containing item metadata.
+#' @param results A data frame containing the raw results.
 #' @export
 formr_api_recognise <- function(item_list, results) {
 	# Safety checks
@@ -295,7 +303,9 @@ formr_api_recognise <- function(item_list, results) {
 #' Reverses numeric items ending in 'R' based on metadata bounds.
 #' Critically, it also updates `haven::labelled` attributes so that 
 #' the text labels point to the new, reversed values.
-#'
+#' 
+#' @param results A data frame containing the results.
+#' @param item_list A data frame containing item metadata.
 #' @export
 formr_api_reverse <- function(results, item_list) {
 	if (is.null(item_list)) return(results)
@@ -316,8 +326,13 @@ formr_api_reverse <- function(results, item_list) {
 		choices <- if(is.list(meta$choices)) meta$choices[[1]] else meta$choices
 		if(is.null(choices)) next 
 		
-		# Convert choices to numeric values to find range
 		meta_vals <- suppressWarnings(as.numeric(unlist(choices)))
+		
+		# If content is text (e.g. "1"="Dis"), try the names instead
+		if(all(is.na(meta_vals)) && !is.null(names(choices))) {
+			meta_vals <- suppressWarnings(as.numeric(names(choices)))
+		}
+		
 		if(all(is.na(meta_vals))) next 
 		
 		max_val <- max(meta_vals, na.rm = TRUE)
@@ -371,6 +386,10 @@ formr_api_reverse <- function(results, item_list) {
 }
 
 #' Aggregate Scales
+#' 
+#' @param results A data frame/tibble containing the run results.
+#' @param item_list A data frame containing item metadata (names, types, choices).
+#' @param min_items Minimum number of valid items required to calculate a mean (default 2).
 #' @export
 formr_api_aggregate <- function(results, item_list, min_items = 2) {
 	# Find stems (e.g. "bfi" from "bfi_1", "bfi_2")
@@ -408,7 +427,10 @@ formr_api_aggregate <- function(results, item_list, min_items = 2) {
 #' Helper: Join results safely
 #' @noRd
 .join_results <- function(results_list) {
-	if (length(results_list) <= 1) return(results_list[[1]])
+	# FIX: Handle empty list to prevent subscript out of bounds error
+	if (length(results_list) == 0) return(dplyr::tibble(session = character()))
+	
+	if (length(results_list) == 1) return(results_list[[1]])
 	
 	results_list_renamed <- purrr::imap(results_list, function(df, name) {
 		if (name == "shuffles") return(df)

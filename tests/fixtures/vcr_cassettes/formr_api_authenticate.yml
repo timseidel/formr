@@ -1,0 +1,28 @@
+http_interactions:
+- request:
+    method: POST
+    uri: http://formr-host-redacted/oauth/access_token
+    body:
+      string: grant_type=client_credentials
+  response:
+    status: 200
+    headers:
+      date: Tue, 20 Jan 2026 20:19:28 GMT
+      server: Apache/2.4.65 (Debian)
+      x-powered-by: PHP/8.2.2
+      set-cookie: formr_session=84273b2ad357fbbcfa93ca2e69445355; path=/; HttpOnly;
+        SameSite=Lax
+      expires: Thu, 19 Nov 1981 08:52:00 GMT
+      cache-control: no-store
+      pragma: no-cache
+      vary: Accept-Encoding
+      content-encoding: gzip
+      access-control-allow-origin: ocpu.rforms.org
+      content-length: '166'
+      content-type: application/json
+    body:
+      string: '{"access_token":"d7d0915ffb385b6cd5adad64244a7efbd856b375","expires_in":3600,"token_type":"Bearer","scope":"user:read
+        user:write survey:read survey:write run:read run:write session:read session:write
+        data:read file:read file:write"}'
+  recorded_at: 2026-01-20 20:19:28
+recorded_with: VCR-vcr/2.1.0
