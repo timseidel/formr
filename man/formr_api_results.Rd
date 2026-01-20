@@ -2,32 +2,32 @@
 % Please edit documentation in R/api_results.R
 \name{formr_api_results}
 \alias{formr_api_results}
-\title{Get Run Results}
+\title{Get and Process Run Results}
 \usage{
 formr_api_results(
   run_name,
-  surveys = NULL,
-  session_ids = NULL,
-  item_names = NULL,
-  join = FALSE
+  ...,
+  compute_scales = TRUE,
+  join = TRUE,
+  remove_test_sessions = TRUE
 )
 }
 \arguments{
 \item{run_name}{Name of the run.}
 
-\item{surveys}{Optional. Vector of survey names to fetch.}
+\item{...}{Filters passed to API (e.g. \code{surveys = c("Daily", "Intake")}, \code{session_ids = "..."}).}
 
-\item{session_ids}{Optional. Filter by specific session IDs.}
+\item{compute_scales}{Logical. Should scales (e.g. \code{extraversion}) be computed from items (e.g. \code{extra_1}, \code{extra_2})?}
 
-\item{item_names}{Optional. Filter by specific item names (columns).}
+\item{join}{Logical. If TRUE (default), joins all surveys into one wide dataframe.}
 
-\item{join}{Logical. If TRUE, merges all surveys into one wide table by 'session',
-suffixing column names with the survey name to prevent conflicts.}
+\item{remove_test_sessions}{Logical. Filter out sessions marked as testing?}
 }
 \value{
-A tibble (if joined or only 1 survey found) or a named list of tibbles.
+A processed tibble (if joined) or a list of processed tibbles.
 }
 \description{
-Fetches results and converts them into tidy tibbles.
-Automatically handles randomization (shuffle) groups by pivoting them into columns.
+This is the main function for scientists. It fetches data from the API,
+automatically cleans types (dates/numbers), reverses items, computes scales,
+and joins everything into one dataframe.
 }

@@ -35,7 +35,7 @@ formr_api_sessions <- function(run_name, session_codes = NULL, active = NULL, te
 		# Filter NULLs (failed requests)
 		results_list <- Filter(Negate(is.null), results_list)
 		
-		return(.process_session_data(results_list))
+		return(.process_api_session_data(results_list))
 	}
 	
 	# --- MODE B: List/Search sessions ---
@@ -51,7 +51,7 @@ formr_api_sessions <- function(run_name, session_codes = NULL, active = NULL, te
 		return(dplyr::tibble())
 	}
 	
-	return(.process_session_data(res))
+	return(.process_api_session_data(res))
 }
 
 #' Create Session(s)
