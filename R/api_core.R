@@ -1,0 +1,197 @@
+#' Internal environment to store session state
+#' @noRd
+.formr_state <- new.env(parent = emptyenv())
+
+#' Get Current API session
+#' @export
+formr_api_session <- function() {
+	if (exists("session", envir = .formr_state)) {
+		return(get("session", envir = .formr_state))
+	}
+	return(NULL)
+}
+
+#' Authenticate with formr
+#'
+#' Connects to the API. If no credentials are provided, 
+#' it tries to find them in the keyring.
+#'
+#' @param host API Base URL.
+#' @param client_id OAuth Client ID.
+#' @param client_secret OAuth Client Secret.
+#' @param access_token Direct Access Token.
+#' @export
+formr_api_authenticate <- function(host = "https://formr.org",
+																	 client_id = NULL,
+																	 client_secret = NULL,
+																	 access_token = NULL) {
+	
+	# 1. Try to load from Keyring if missing
+	if (is.null(client_id) && is.null(access_token) &&
+			requireNamespace("keyring", quietly = TRUE)) {
+		service_name <- paste0("formr_", host)
+		try({
+			keys <- keyring::key_list(service = service_name)
+			if ("access_token" %in% keys$username) {
+				access_token <- keyring::key_get(
+					service = service_name, username = "access_token")
+			} else if (all(c("client_id", "client_secret") %in% keys$username)) {
+				client_id <- keyring::key_get(
+					service = service_name, username = "client_id")
+				client_secret <- keyring::key_get(
+					service = service_name, username = "client_secret")
+			}
+		}, silent = TRUE)
+	}
+	
+	# 2. Authenticate
+	if (!is.null(access_token)) {
+		# Direct Token
+		session_data <- list(base_url = httr::parse_url(host), token = access_token)
+		
+		# --- CHANGE: Save to environment ---
+		assign("session", session_data, envir = .formr_state)
+		
+		# Verify
+		tryCatch({
+			formr_api_request("user/me", method = "GET")
+			message("[SUCCESS] Authenticated via Access Token.")
+		}, error = function(e) {
+			warning("Authentication failed: ", e$message)
+		})
+		
+	} else if (!is.null(client_id) && !is.null(client_secret)) {
+		# Client Credentials Flow
+		token_url <- httr::parse_url(host)
+		token_url$path <- paste0(token_url$path, "/oauth/access_token")
+		token_url$path <- gsub("//", "/", token_url$path)
+		
+		res <- httr::POST(
+			token_url,
+			httr::authenticate(client_id, client_secret, type = "basic"),
+			body = list(grant_type = "client_credentials"),
+			encode = "form"
+		)
+		
+		if (httr::status_code(res) >= 400)
+			stop("OAuth Error: ", httr::content(res, "text"))
+		
+		token <- httr::content(res)$access_token
+		
+		# --- CHANGE: Save to environment ---
+		session_data <- list(base_url = httr::parse_url(host), token = token)
+		assign("session", session_data, envir = .formr_state)
+		
+		message("[SUCCESS] Authenticated via OAuth.")
+		
+	} else {
+		stop("No credentials found. Use formr_store_keys() or provide arguments.")
+	}
+}
+
+#' Revoke Access Token (Logout)
+#'
+#' Invalidates the current access token on the server and 
+#' clears the local session state.
+#'
+#' @export
+formr_api_logout <- function() {
+	# 1. Get current session
+	session <- formr_api_session()
+	
+	if (is.null(session)) {
+		message("No active session found.")
+		return(invisible(FALSE))
+	}
+	
+	# 2. Construct the URL (Manually, as this is an OAuth endpoint, not V1)
+	# Matches PHP: public function oauthAction... elseif ($action === 'delete_token')
+	url <- session$base_url
+	url$path <- paste0(url$path, "/oauth/delete_token")
+	url$path <- gsub("//", "/", url$path)
+	
+	# 3. Send Request
+	# Matches PHP: $this->post->access_token inside delete_token()
+	tryCatch({
+		res <- httr::POST(
+			url,
+			body = list(access_token = session$token),
+			encode = "form"
+		)
+		
+		# Check for success (200 OK)
+		if (httr::status_code(res) == 200) {
+			message("[SUCCESS] Token revoked on server.")
+		} else {
+			warning("Server could not revoke token (it may already be expired): ", 
+							httr::content(res, "text"))
+		}
+		
+	}, error = function(e) {
+		warning("Network error during logout: ", e$message)
+	})
+	
+	# 4. Clear Local Session (Always do this, even if server request fails)
+	if (exists("session", envir = .formr_state)) {
+		rm("session", envir = .formr_state)
+	}
+	
+	message("[SUCCESS] Local session cleared.")
+	return(invisible(TRUE))
+}
+
+#' Internal: API Request Handler
+#' @noRd
+formr_api_request <- function(endpoint,
+															method = "GET",
+															body = NULL,
+															query = NULL,
+															api_version = "v1",
+															encode = NULL) {
+	session <- formr_api_session()
+	if (is.null(session))
+		stop("Not authenticated. Run formr_api_authenticate().")
+	
+	url <- session$base_url
+	url$path <- paste0(url$path, "/", api_version, "/", endpoint)
+	url$path <- gsub("//", "/", url$path)
+	
+	auth <- httr::add_headers(Authorization = paste("Bearer", session$token))
+	
+	if (is.null(encode)) {
+		encode <- "json"
+		if (any(sapply(body, inherits, "form_file")))
+			encode <- "multipart"
+	}
+	
+	if (method == "GET")
+		req <- httr::GET(url, query = query, auth)
+	else if (method == "POST")
+		req <- httr::POST(url, body = body, encode = encode, auth)
+	else if (method == "PUT")
+		req <- httr::PUT(url, body = body, encode = encode, auth)
+	else if (method == "PATCH")
+		req <- httr::PATCH(url, body = body, encode = encode, auth)
+	else if (method == "DELETE")
+		req <- httr::DELETE(url, auth)
+	
+	if (httr::http_type(req) != "application/json") {
+		stop(
+			sprintf(
+				"API Error: Expected JSON, got %s.\nPreview: %s",
+				httr::http_type(req),
+				substr(httr::content(req, "text"), 1, 200)
+			)
+		)
+	}
+	
+	if (httr::status_code(req) >= 400) {
+		stop(sprintf(
+			"API Error (%s): %s",
+			httr::status_code(req),
+			httr::content(req, "text")
+		))
+	}
+	
+	httr::content(req, "parsed")
+}

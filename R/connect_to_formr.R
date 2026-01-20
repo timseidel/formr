@@ -100,35 +100,6 @@ formr_last_host <- local({
 	}
 })
 
-#' Store keys in keyring
-#'
-#' Store keys in the system keyring/keychain instead of plaintext.
-#' @param account_name a shorthand for the account you're using
-#' @param email email address for the account, will be prompted if omitted
-#' @param secret_2fa a 2FA secret, optional, set to NULL if you want to
-#' be prompted for it when logging in, set to "" if you don't have 2FA
-#' @export
-#' @examples
-#' \dontrun{
-#' formr_store_keys("formr_diary_study_account")
-#' }
-
-formr_store_keys = function(account_name, email = NULL, secret_2fa = NULL) {
-	if(is.null(email)) {
-		email = readline("Enter your email: ")
-	}
-	keyring::key_set(service = account_name,
-									 username = email)
-	if(!is.null(secret_2fa)) {
-		keyring::key_set_with_value(service = account_name, username = paste(email, "2FA"),
-										 password = secret_2fa)
-	}	else { 
-		keyring::key_set(service = account_name,
-										 username = paste(email, "2FA"),
-										 prompt = "2FA secret if applicable")
-	}
-}
-
 
 #' Disconnect from formr
 #'
