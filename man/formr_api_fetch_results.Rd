@@ -2,7 +2,7 @@
 % Please edit documentation in R/api_results.R
 \name{formr_api_fetch_results}
 \alias{formr_api_fetch_results}
-\title{Low-level API Result Fetcher}
+\title{Lower-level API Result Fetcher}
 \usage{
 formr_api_fetch_results(
   run_name,

@@ -2,10 +2,12 @@
 % Please edit documentation in R/api_results.R
 \name{formr_api_reverse}
 \alias{formr_api_reverse}
-\title{Reverse Items}
+\title{Reverse Items and Update Labels}
 \usage{
 formr_api_reverse(results, item_list)
 }
 \description{
-Reverse Items
+Reverses numeric items ending in 'R' based on metadata bounds.
+Critically, it also updates \code{haven::labelled} attributes so that
+the text labels point to the new, reversed values.
 }

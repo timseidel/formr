@@ -134,7 +134,7 @@ formr_api_results <- function(run_name,
 	return(processed_list)
 }
 
-#' Low-level API Result Fetcher
+#' Lower-level API Result Fetcher
 #'
 #' Fetches raw results. Advanced users can use this if they want 
 #' completely raw data without any type coercion or processing.
@@ -290,7 +290,12 @@ formr_api_recognise <- function(item_list, results) {
 	results
 }
 
-#' Reverse Items
+#' Reverse Items and Update Labels
+#' 
+#' Reverses numeric items ending in 'R' based on metadata bounds.
+#' Critically, it also updates `haven::labelled` attributes so that 
+#' the text labels point to the new, reversed values.
+#'
 #' @export
 formr_api_reverse <- function(results, item_list) {
 	if (is.null(item_list)) return(results)
@@ -300,25 +305,66 @@ formr_api_reverse <- function(results, item_list) {
 	reversed_vars <- item_names[stringr::str_detect(item_names, "(?i)[a-z0-9_]+?[0-9]+R$")]
 	
 	for (var in reversed_vars) {
-		# Only process numeric columns
-		if(!is.numeric(results[[var]]) && !inherits(results[[var]], "haven_labelled")) next
+		# Only process numeric columns (or labelled ones)
+		val_vec <- results[[var]]
+		if(!is.numeric(val_vec) && !inherits(val_vec, "haven_labelled")) next
 		
-		# Find Min/Max from Metadata
+		# --- 1. Determine Bounds from Metadata ---
 		meta <- item_list[item_list$name == var, ]
 		if(nrow(meta) == 0) next
 		
 		choices <- if(is.list(meta$choices)) meta$choices[[1]] else meta$choices
-		if(is.null(choices)) next # Skip if no choices defined
+		if(is.null(choices)) next 
 		
-		# Convert choices to numeric values
-		vals <- suppressWarnings(as.numeric(unlist(choices)))
-		if(all(is.na(vals))) next 
+		# Convert choices to numeric values to find range
+		meta_vals <- suppressWarnings(as.numeric(unlist(choices)))
+		if(all(is.na(meta_vals))) next 
 		
-		max_val <- max(vals, na.rm = TRUE)
-		min_val <- min(vals, na.rm = TRUE)
+		max_val <- max(meta_vals, na.rm = TRUE)
+		min_val <- min(meta_vals, na.rm = TRUE)
+		reversal_const <- max_val + min_val
 		
+		# --- 2. Perform Numeric Reversal ---
 		# Formula: (Max + Min) - Value
-		results[[var]] <- (max_val + min_val) - as.numeric(results[[var]])
+		# Note: This operation strips attributes, so we store it in a temp var
+		reversed_numeric <- reversal_const - as.numeric(val_vec)
+		
+		# --- 3. Handle Label Attributes ---
+		if (inherits(val_vec, "haven_labelled")) {
+			# Extract existing definitions (e.g. 1="Low", 5="High")
+			old_labels <- attr(val_vec, "labels")
+			
+			if (!is.null(old_labels)) {
+				# Reverse the definition values
+				# "Low" was 1, becomes (6-1) = 5
+				# "High" was 5, becomes (6-5) = 1
+				new_labels <- reversal_const - old_labels
+				
+				# Reconstruct the labelled object 
+				# We sort the labels so they appear neatly in viewers (1..5)
+				results[[var]] <- haven::labelled(
+					reversed_numeric, 
+					labels = sort(new_labels)
+				)
+				
+				# Restore the Variable Label (Question Text) if it existed
+				if (!is.null(attr(val_vec, "label"))) {
+					attr(results[[var]], "label") <- attr(val_vec, "label")
+				}
+			} else {
+				# Was labelled class but had no labels? Just assign numeric
+				results[[var]] <- reversed_numeric
+			}
+		} else {
+			# Plain numeric variable
+			results[[var]] <- reversed_numeric
+			# Preserve variable label if it exists
+			if (!is.null(attr(val_vec, "label"))) {
+				attr(results[[var]], "label") <- attr(val_vec, "label")
+			}
+		}
+		
+		# Mark as reversed for transparency
 		attr(results[[var]], "reversed") <- TRUE
 	}
 	results
