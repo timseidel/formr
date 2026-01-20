@@ -36,17 +36,17 @@
 <li><h6 class="dropdown-header" data-toc-skip>Basics</h6></li>
     <li><a class="dropdown-item" href="../articles/getting-started.html">Getting Started</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Project Management</h6></li>
-    <li><a class="dropdown-item" href="../articles/manage-your-studies.html">Manage your Studies (Workflow)</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Get your Results</h6></li>
+    <li><a class="dropdown-item" href="../articles/fetch-and-process-results.html">Fetch &amp; Process Results</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Run Administration</h6></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Project (Run) Management</h6></li>
+    <li><a class="dropdown-item" href="../articles/manage-your-projects.html">Manage your Projects</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Everything API</h6></li>
     <li><a class="dropdown-item" href="../articles/manage-your-runs.html">Manage your Runs</a></li>
     <li><a class="dropdown-item" href="../articles/manage-your-sessions.html">Manage your Sessions</a></li>
     <li><a class="dropdown-item" href="../articles/manage-your-surveys.html">Manage your Surveys</a></li>
     <li><a class="dropdown-item" href="../articles/manage-your-files.html">Manage your Files</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Analysis</h6></li>
-    <li><a class="dropdown-item" href="../articles/fetch-and-process-results.html">Fetch &amp; Process Results</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -88,22 +88,24 @@
     
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://rubenarslan.github.io/formr/">formr</a></span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://rubenarslan.github.io/formr/">formr</a></span><span class="op">)</span></span>
+<span><span class="co"># Automatically finds your stored keys</span></span>
+<span><span class="fu"><a href="../reference/formr_api_authenticate.html">formr_api_authenticate</a></span><span class="op">(</span>host <span class="op">=</span> <span class="st">"https://api.formr.org"</span><span class="op">)</span> <span class="co"># or your custom URL!</span></span></code></pre></div>
 <p>Most complex studies require more than just survey spreadsheets. For
 example, you might need to host images for experimental stimuli.</p>
 <p>While the <a href="manage-your-studies.html">Project Workflow</a>
-(<code>formr_push_project</code>) syncs your <code>files/</code> folder
-automatically, the functions below give you direct, granular control
-over the file storage of your run.</p>
+(<code>formr_api_push_project</code>) syncs your <code>files/</code>
+folder automatically, the functions below give you direct, granular
+control over the file storage of your run.</p>
 <div class="section level2">
 <h2 id="listing-files">Listing Files<a class="anchor" aria-label="anchor" href="#listing-files"></a>
 </h2>
 <p>To see what files are currently attached to your run, use
-<code><a href="../reference/formr_files.html">formr_files()</a></code>. This returns a data frame containing the
+<code><a href="../reference/formr_api_files.html">formr_api_files()</a></code>. This returns a data frame containing the
 file names, their public URLs, and upload timestamps.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># List all files attached to the study</span></span>
-<span><span class="va">files</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_files.html">formr_files</a></span><span class="op">(</span><span class="st">"my-study-name"</span><span class="op">)</span></span>
+<span><span class="va">files</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_api_files.html">formr_api_files</a></span><span class="op">(</span><span class="st">"my-study-name"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># View the first few files</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">files</span><span class="op">)</span></span></code></pre></div>
@@ -121,7 +123,7 @@ re-syncing the entire project.</p>
 </h3>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Upload a single logo</span></span>
-<span><span class="fu"><a href="../reference/formr_upload_file.html">formr_upload_file</a></span><span class="op">(</span><span class="st">"my-study-name"</span>, path <span class="op">=</span> <span class="st">"assets/logo.png"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/formr_api_upload_file.html">formr_api_upload_file</a></span><span class="op">(</span><span class="st">"my-study-name"</span>, path <span class="op">=</span> <span class="st">"assets/logo.png"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="multiple-files-or-directories">Multiple Files or Directories<a class="anchor" aria-label="anchor" href="#multiple-files-or-directories"></a>
@@ -131,10 +133,10 @@ directory. If you pass a directory, <code>formr</code> will upload all
 files directly inside it.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Upload multiple specific files</span></span>
-<span><span class="fu"><a href="../reference/formr_upload_file.html">formr_upload_file</a></span><span class="op">(</span><span class="st">"my-study-name"</span>, path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"assets/img1.jpg"</span>, <span class="st">"assets/img2.jpg"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/formr_api_upload_file.html">formr_api_upload_file</a></span><span class="op">(</span><span class="st">"my-study-name"</span>, path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"assets/img1.jpg"</span>, <span class="st">"assets/img2.jpg"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Upload an entire folder of stimuli</span></span>
-<span><span class="fu"><a href="../reference/formr_upload_file.html">formr_upload_file</a></span><span class="op">(</span><span class="st">"my-study-name"</span>, path <span class="op">=</span> <span class="st">"assets/stimuli/"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/formr_api_upload_file.html">formr_api_upload_file</a></span><span class="op">(</span><span class="st">"my-study-name"</span>, path <span class="op">=</span> <span class="st">"assets/stimuli/"</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -143,10 +145,10 @@ files directly inside it.</p>
 <p>To keep your run clean, you can remove obsolete files.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Delete a specific file</span></span>
-<span><span class="fu"><a href="../reference/formr_delete_file.html">formr_delete_file</a></span><span class="op">(</span><span class="st">"my-study-name"</span>, file_name <span class="op">=</span> <span class="st">"old_logo.png"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/formr_api_delete_file.html">formr_api_delete_file</a></span><span class="op">(</span><span class="st">"my-study-name"</span>, file_name <span class="op">=</span> <span class="st">"old_logo.png"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Delete a list of files</span></span>
-<span><span class="fu"><a href="../reference/formr_delete_file.html">formr_delete_file</a></span><span class="op">(</span><span class="st">"my-study-name"</span>, file_name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"test1.jpg"</span>, <span class="st">"test2.jpg"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/formr_api_delete_file.html">formr_api_delete_file</a></span><span class="op">(</span><span class="st">"my-study-name"</span>, file_name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"test1.jpg"</span>, <span class="st">"test2.jpg"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="cleaning-up-delete-all">Cleaning Up (Delete All)<a class="anchor" aria-label="anchor" href="#cleaning-up-delete-all"></a>
 </h3>
@@ -154,7 +156,7 @@ files directly inside it.</p>
 wipe all files. <strong>Use this with caution.</strong></p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Delete ALL files (prompts for confirmation)</span></span>
-<span><span class="fu"><a href="../reference/formr_delete_all_files.html">formr_delete_all_files</a></span><span class="op">(</span><span class="st">"my-study-name"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/formr_api_delete_all_files.html">formr_api_delete_all_files</a></span><span class="op">(</span><span class="st">"my-study-name"</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -2,20 +2,22 @@
 
 ``` r
 library(formr)
+# Automatically finds your stored keys
+formr_api_authenticate(host = "https://api.formr.org") # or your custom URL!
 ```
 
 In addition to managing Runs, `formr` allows you to directly interact
 with the underlying Surveys (the spreadsheets containing your items and
 logic). While the [Project
 Workflow](http://rubenarslan.github.io/formr/articles/manage-your-studies.md)
-(`formr_push_project`) is recommended for syncing entire studies, the
-functions below allow you to list, inspect, download, or delete specific
-surveys individually.
+(`formr_api_push_project`) is recommended for syncing entire studies,
+the functions below allow you to list, inspect, download, or delete
+specific surveys individually.
 
 ## Listing Your Surveys
 
 To view a list of all surveys associated with your account, use
-[`formr_surveys()`](http://rubenarslan.github.io/formr/reference/formr_surveys.md).
+[`formr_api_surveys()`](http://rubenarslan.github.io/formr/reference/formr_api_surveys.md).
 This returns a tidy data frame containing the survey ID, name, and
 modification timestamps.
 
@@ -23,10 +25,10 @@ You can also filter the list by name using the `name_pattern` argument.
 
 ``` r
 # List all surveys
-all_surveys <- formr_surveys()
+all_surveys <- formr_api_surveys()
 
 # Find specific surveys (e.g., all diaries)
-diaries <- formr_surveys(name_pattern = "diary")
+diaries <- formr_api_surveys(name_pattern = "diary")
 print(diaries)
 ```
 
@@ -42,7 +44,7 @@ choice labels without leaving your R session.
 
 ``` r
 # Get the survey items as a tibble
-items <- formr_survey_structure("daily_diary_v1")
+items <- formr_api_survey_structure("daily_diary_v1")
 
 # Check the first few items
 head(items)
@@ -55,7 +57,7 @@ version currently on the server, you can download it directly.
 
 ``` r
 # Download the survey as an Excel file
-formr_survey_structure(
+formr_api_survey_structure(
   survey_name = "daily_diary_v1", 
   format = "xlsx", 
   file_path = "backup_daily_diary.xlsx"
@@ -70,7 +72,7 @@ project folder.
 
 ``` r
 # Upload a local Excel file
-formr_upload_survey(
+formr_api_upload_survey(
   file_path = "surveys/my_new_survey.xlsx", 
   survey_name = "my_new_survey" # Optional: Defaults to filename if omitted
 )
@@ -81,7 +83,7 @@ formr_upload_survey(
 You can also import a survey directly from a published Google Sheet URL.
 
 ``` r
-formr_upload_survey(
+formr_api_upload_survey(
   survey_name = "google_imported_survey",
   google_sheet_url = "https://docs.google.com/spreadsheets/d/..."
 )
@@ -93,8 +95,8 @@ You can permanently delete a survey if it is no longer needed.
 
 ``` r
 # Delete a survey (prompts for confirmation by default)
-formr_delete_survey("old_pilot_survey")
+formr_api_delete_survey("old_pilot_survey")
 
 # Force delete without confirmation (for automated scripts)
-formr_delete_survey("old_pilot_survey", prompt = FALSE)
+formr_api_delete_survey("old_pilot_survey", prompt = FALSE)
 ```

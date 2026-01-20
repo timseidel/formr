@@ -1,65 +1,175 @@
 # Getting Started
 
-**To install the API-DEV version:**
+The `formr` R package is the companion to the
+[formr.org](https://formr.org) survey framework. It allows you to:
+
+1.  **Manage Projects:** Sync surveys and files between your computer
+    and the server.
+2.  **Fetch Data:** Download and process results for analysis.
+3.  **Control Logic:** Use the API *within* a Run to check user progress
+    or previous answers dynamically.
+
+## Installation
+
+You can install the package from GitHub:
 
 ``` r
 if (!requireNamespace("remotes")) install.packages("remotes")
-remotes::install_github("timseidel/formr")
+remotes::install_github("rubenarslan/formr")
 ```
+
+The package is automatically installed within your formr server. Just
+use:
+
+``` r
+library(formr)
+```
+
+## The “Two Ways of Connecting”
+
+The package currently contains two ways of interacting with the
+formr-server. It is helpful to know which one to use:
+
+| Feature            | **New API (V1)**                                                     | **Classic**          |
+|:-------------------|:---------------------------------------------------------------------|:---------------------|
+| **Prefix**         | `formr_api_*`                                                        | `formr_*`            |
+| **Authentication** | OAuth / Access Tokens                                                | Email & Password     |
+| **Primary Use**    | Project Management, Live Logic within your Run, Modern Data Fetching | Legacy Data Fetching |
+
+**Recommendation:** Use the **New API (`formr_api_*`)** for all new
+projects.
+
+------------------------------------------------------------------------
 
 ## Authentication
 
 To use the API features (fetching results, managing files), you must
-first authenticate. You can store your credentials securely in your
-system’s keyring so you don’t have to type them every time.
+first authenticate.
 
-1.  Log in to formr.org and go to **Account \> API Settings**.
-2.  Create a Client ID and Secret.
+### 1. Local Setup (One-time)
+
+You can store your credentials securely in your system’s keyring so you
+don’t have to type them every time.
+
+#### 1.1 Save your API Credentials
+
+1.  Log in to formr.org (or your instance).
+2.  Go to **Account \> API Settings**.
+3.  Create a Client ID and Secret.
+4.  Run the following code **once** in your R console:
 
 ``` r
-library(formr)
-
 # Store your credentials once
 # This saves them securely in your OS credential store
 formr_store_keys(
-  host = "https://formr.org", # or the URL of your instance
+  host = "https://api.formr.org", 
   client_id = "YOUR_CLIENT_ID", 
   client_secret = "YOUR_CLIENT_SECRET"
 )
-
-# Then, in all of your scripts, simply run:
-formr_api_authenticate(host = "https://formr.org") 
-# or the URL of your instance
 ```
 
-#### You can use the API within your runs R-Code.
+#### 1.2 Save your regular User Credentials (Classic)
+
+If you plan to use the “Classic” functions
+(e.g. [`formr_results()`](http://rubenarslan.github.io/formr/reference/formr_results.md),
+[`formr_raw_results()`](http://rubenarslan.github.io/formr/reference/formr_raw_results.md)),
+you need to store your email and password. This allows you to create a
+shorthand name for your account to log in securely without putting
+passwords in your script.
+
+1.  Run the following code **once** in your R console.
+2.  You will be prompted to enter your email and password (and
+    optionally a 2FA secret) securely.
 
 ``` r
-# Simply run:
+# Store your email/password under a shorthand name (e.g. "main_account")
+formr_store_keys("main_account")
+```
+
+### 2. Authenticating in Scripts
+
+Once your keys are stored, you simply authenticate at the start of your
+session:
+
+#### 1.1 Thru the API
+
+``` r
+# Automatically finds your stored keys
+formr_api_authenticate(host = "https://api.formr.org") # or your custom URL!
+```
+
+#### 1.2 With your User Credentials (Classic)
+
+Once stored, you can connect in your scripts using this shorthand:
+
+``` r
+# Connect using the stored credentials
+formr_connect("main_account")
+```
+
+### 3. Authenticating *Inside* formr Runs
+
+You can also use the API functions within the R-Code of your actual
+survey run (e.g., to look up previous results). In this environment, you
+do not need credentials; the system provides a temporary context. Just
+run:
+
+``` r
+# Inside a formr Run, simply call:
 formr_api_authenticate()
 ```
 
-#### Running API Functions
+------------------------------------------------------------------------
 
-Once authenticated, you can run the API functions:
+## Workflow Examples
+
+### Project Management (Push & Pull)
+
+The new API allows you to work on your survey structure and files
+locally and sync them to the server. Learn more about how this can save
+you time in the [Manage your
+Projects](http://rubenarslan.github.io/formr/articles/manage-your-projects.md)
+Tutorial.
 
 ``` r
-# For example:
-formr_runs()
+# Download a project (surveys and files) to your local folder
+formr_api_pull_project("daily_diary")
+
+# Upload changes back to the server
+formr_api_push_project("daily_diary")
 ```
 
-#### Logging off
+### Fetching Results
 
-[`formr_api_authenticate()`](http://rubenarslan.github.io/formr/reference/formr_api_authenticate.md)
-provides you with a TOKEN that is valid for an Hour. Currently, you will
-need to rerun the authentication after this.
+The
+[`formr_api_results()`](http://rubenarslan.github.io/formr/reference/formr_api_results.md)
+function is the modern way to get data. It automatically recognizes data
+types, reverses items, and aggregates scales. Learn how it works in the
+[Fetch & Process
+Results](http://rubenarslan.github.io/formr/articles/fetch-and-process-results.md)
+Tutorial.
 
-**At the end of your analysis:**
+``` r
+# Fetch and process
+df <- formr_api_results("daily_diary")
+```
 
-- **On the Server:** When running Code on the formr server, the TOKEN
-  gets invalidated automatically.
-- **Local Device:** When running Code on your local device, you may let
-  the TOKEN run out its validity period or revoke it manually.
+------------------------------------------------------------------------
+
+## Token Management & Security
+
+When you run
+[`formr_api_authenticate()`](http://rubenarslan.github.io/formr/reference/formr_api_authenticate.md),
+it provides you with an Access Token.
+
+- **Validity:** The token is valid for **one hour**. You will need to
+  rerun authentication after this period.
+- **On the Server:** When running code *inside* a formr survey, the
+  token is invalidated automatically when the request finishes.
+- **Local Device:** When running code on your laptop, the token remains
+  valid until it expires or you revoke it.
+
+At the end of your analysis session, you may revoke the token manually:
 
 ``` r
 formr_api_logout()

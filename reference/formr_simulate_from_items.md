@@ -36,13 +36,13 @@ items = formr_items(path =
 system.file('extdata/gods_example_items.json', package = 'formr', mustWork = TRUE))
 fakedata = formr_simulate_from_items(items, n = 20)
 fakedata[1:2,]
-#>   id             created               ended            modified gods
-#> 1  1 2025-09-27 23:22:18 2025-09-27 23:24:46 2025-09-27 23:24:46 glob
-#> 2  2 2025-10-01 08:14:28 2025-10-01 08:16:39 2025-10-01 08:16:39 glob
-#>   religiousness_1 religiousness_2R religiousness_3 religiousness_4 prefer_1
-#> 1               4                3               1               4        1
-#> 2               1                1               2               4        5
-#>   prefer_2
-#> 1        2
-#> 2        2
+#>   id             created               ended            modified
+#> 1  1 2025-09-28 22:57:47 2025-09-28 23:00:03 2025-09-28 23:00:03
+#> 2  2 2025-10-02 07:08:08 2025-10-02 07:10:33 2025-10-02 07:10:33
+#>                gods religiousness_1 religiousness_2R religiousness_3
+#> 1              glob               1                1               1
+#> 2 spaghetti_monster               4                3               4
+#>   religiousness_4 prefer_1 prefer_2
+#> 1               2        1        4
+#> 2               3        5        2
 ```

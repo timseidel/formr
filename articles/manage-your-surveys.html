@@ -36,17 +36,17 @@
 <li><h6 class="dropdown-header" data-toc-skip>Basics</h6></li>
     <li><a class="dropdown-item" href="../articles/getting-started.html">Getting Started</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Project Management</h6></li>
-    <li><a class="dropdown-item" href="../articles/manage-your-studies.html">Manage your Studies (Workflow)</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Get your Results</h6></li>
+    <li><a class="dropdown-item" href="../articles/fetch-and-process-results.html">Fetch &amp; Process Results</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Run Administration</h6></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Project (Run) Management</h6></li>
+    <li><a class="dropdown-item" href="../articles/manage-your-projects.html">Manage your Projects</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Everything API</h6></li>
     <li><a class="dropdown-item" href="../articles/manage-your-runs.html">Manage your Runs</a></li>
     <li><a class="dropdown-item" href="../articles/manage-your-sessions.html">Manage your Sessions</a></li>
     <li><a class="dropdown-item" href="../articles/manage-your-surveys.html">Manage your Surveys</a></li>
     <li><a class="dropdown-item" href="../articles/manage-your-files.html">Manage your Files</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Analysis</h6></li>
-    <li><a class="dropdown-item" href="../articles/fetch-and-process-results.html">Fetch &amp; Process Results</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -88,27 +88,29 @@
     
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://rubenarslan.github.io/formr/">formr</a></span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://rubenarslan.github.io/formr/">formr</a></span><span class="op">)</span></span>
+<span><span class="co"># Automatically finds your stored keys</span></span>
+<span><span class="fu"><a href="../reference/formr_api_authenticate.html">formr_api_authenticate</a></span><span class="op">(</span>host <span class="op">=</span> <span class="st">"https://api.formr.org"</span><span class="op">)</span> <span class="co"># or your custom URL!</span></span></code></pre></div>
 <p>In addition to managing Runs, <code>formr</code> allows you to
 directly interact with the underlying Surveys (the spreadsheets
 containing your items and logic). While the <a href="manage-your-studies.html">Project Workflow</a>
-(<code>formr_push_project</code>) is recommended for syncing entire
+(<code>formr_api_push_project</code>) is recommended for syncing entire
 studies, the functions below allow you to list, inspect, download, or
 delete specific surveys individually.</p>
 <div class="section level2">
 <h2 id="listing-your-surveys">Listing Your Surveys<a class="anchor" aria-label="anchor" href="#listing-your-surveys"></a>
 </h2>
 <p>To view a list of all surveys associated with your account, use
-<code><a href="../reference/formr_surveys.html">formr_surveys()</a></code>. This returns a tidy data frame containing
-the survey ID, name, and modification timestamps.</p>
+<code><a href="../reference/formr_api_surveys.html">formr_api_surveys()</a></code>. This returns a tidy data frame
+containing the survey ID, name, and modification timestamps.</p>
 <p>You can also filter the list by name using the
 <code>name_pattern</code> argument.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># List all surveys</span></span>
-<span><span class="va">all_surveys</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_surveys.html">formr_surveys</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">all_surveys</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_api_surveys.html">formr_api_surveys</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Find specific surveys (e.g., all diaries)</span></span>
-<span><span class="va">diaries</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_surveys.html">formr_surveys</a></span><span class="op">(</span>name_pattern <span class="op">=</span> <span class="st">"diary"</span><span class="op">)</span></span>
+<span><span class="va">diaries</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_api_surveys.html">formr_api_surveys</a></span><span class="op">(</span>name_pattern <span class="op">=</span> <span class="st">"diary"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">diaries</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -124,7 +126,7 @@ the survey ID, name, and modification timestamps.</p>
 choice labels without leaving your R session.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Get the survey items as a tibble</span></span>
-<span><span class="va">items</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_survey_structure.html">formr_survey_structure</a></span><span class="op">(</span><span class="st">"daily_diary_v1"</span><span class="op">)</span></span>
+<span><span class="va">items</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_api_survey_structure.html">formr_api_survey_structure</a></span><span class="op">(</span><span class="st">"daily_diary_v1"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Check the first few items</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">items</span><span class="op">)</span></span></code></pre></div>
@@ -136,7 +138,7 @@ choice labels without leaving your R session.</p>
 version currently on the server, you can download it directly.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Download the survey as an Excel file</span></span>
-<span><span class="fu"><a href="../reference/formr_survey_structure.html">formr_survey_structure</a></span><span class="op">(</span></span>
+<span><span class="fu"><a href="../reference/formr_api_survey_structure.html">formr_api_survey_structure</a></span><span class="op">(</span></span>
 <span>  survey_name <span class="op">=</span> <span class="st">"daily_diary_v1"</span>, </span>
 <span>  format <span class="op">=</span> <span class="st">"xlsx"</span>, </span>
 <span>  file_path <span class="op">=</span> <span class="st">"backup_daily_diary.xlsx"</span></span>
@@ -151,7 +153,7 @@ want to update just one component of a study without syncing the entire
 project folder.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Upload a local Excel file</span></span>
-<span><span class="fu"><a href="../reference/formr_upload_survey.html">formr_upload_survey</a></span><span class="op">(</span></span>
+<span><span class="fu"><a href="../reference/formr_api_upload_survey.html">formr_api_upload_survey</a></span><span class="op">(</span></span>
 <span>  file_path <span class="op">=</span> <span class="st">"surveys/my_new_survey.xlsx"</span>, </span>
 <span>  survey_name <span class="op">=</span> <span class="st">"my_new_survey"</span> <span class="co"># Optional: Defaults to filename if omitted</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -161,7 +163,7 @@ project folder.</p>
 <p>You can also import a survey directly from a published Google Sheet
 URL.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/formr_upload_survey.html">formr_upload_survey</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/formr_api_upload_survey.html">formr_api_upload_survey</a></span><span class="op">(</span></span>
 <span>  survey_name <span class="op">=</span> <span class="st">"google_imported_survey"</span>,</span>
 <span>  google_sheet_url <span class="op">=</span> <span class="st">"https://docs.google.com/spreadsheets/d/..."</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -173,10 +175,10 @@ URL.</p>
 <p>You can permanently delete a survey if it is no longer needed.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Delete a survey (prompts for confirmation by default)</span></span>
-<span><span class="fu"><a href="../reference/formr_delete_survey.html">formr_delete_survey</a></span><span class="op">(</span><span class="st">"old_pilot_survey"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/formr_api_delete_survey.html">formr_api_delete_survey</a></span><span class="op">(</span><span class="st">"old_pilot_survey"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Force delete without confirmation (for automated scripts)</span></span>
-<span><span class="fu"><a href="../reference/formr_delete_survey.html">formr_delete_survey</a></span><span class="op">(</span><span class="st">"old_pilot_survey"</span>, prompt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/formr_api_delete_survey.html">formr_api_delete_survey</a></span><span class="op">(</span><span class="st">"old_pilot_survey"</span>, prompt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

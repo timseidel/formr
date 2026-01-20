@@ -4,150 +4,138 @@
 library(formr)
 ```
 
-One of the strongest features of the `formr` package is the ability to
-create a reproducible data import pipeline. Instead of manually
-downloading CSVs from a website, renaming columns, and calculating
-scales in a messy script, you can fetch, merge, and clean your data in a
-few lines of code.
+The new `formr` API (V1) provides a streamlined pipeline for importing
+data. The API strictly separates **fetching** (getting data from the
+server) from **wrangling** (processing types, reversals, and scales),
+but the package provides a powerful convenience wrapper,
+[`formr_api_results()`](http://rubenarslan.github.io/formr/reference/formr_api_results.md),
+to handle the entire process in one step.
 
-## 1. Fetching Data
+## 1. Authentication
 
-The primary function for retrieving data is
-[`formr_results()`](http://rubenarslan.github.io/formr/reference/formr_results.md).
-
-### Basic Usage
-
-By default, `formr_results` fetches all the surveys currently in use and
-all the shuffle units ever associated with a run.
+Before fetching data, ensure you are authenticated. If you have stored
+your keys (see [Getting
+Started](http://rubenarslan.github.io/formr/articles/getting-started.md)),
+this is automatic.
 
 ``` r
-# Fetch all data for a run
-raw_data <- formr_results("my-study-name")
+# Authenticate using stored credentials
+formr_api_authenticate(host = "https://api.formr.org") # or your custom URL!
 ```
 
-If your run contains multiple surveys (e.g., a “Baseline” and a
-“Diary”), the function returns a **named list** of tibbles, one for each
-survey.
+## 2. The One-Stop Solution (`formr_api_results`)
 
-### Automatic Joining (`join = TRUE`)
-
-In most analysis scenarios, you want a single “wide” dataset where one
-row represents one session. Setting `join = TRUE` handles this
-automatically.
+The primary function is
+[`formr_api_results()`](http://rubenarslan.github.io/formr/reference/formr_api_results.md).
+By default, it performs a “Smart Fetch” that handles everything from
+download to psychometric scoring.
 
 ``` r
-# Fetch and merge everything by session ID
-joined_data <- formr_results("my-study-name", join = TRUE)
+# Fetch, reverse, aggregate, and join all data
+df <- formr_api_results(run_name = "daily_diary")
 ```
 
-**What happens during the join?**
+### What does `formr_api_results` do by default?
 
-1.  **Merging:** Surveys are full-joined by the `session` identifier.
-2.  **Conflict Resolution:** If variable names collide (e.g., both
-    surveys have a variable named `created`), they are suffixed with the
-    survey name (e.g., `created_baseline`, `created_diary`).
-3.  **Shuffles:** If your run uses randomization (Shuffles), the group
-    assignments are automatically pivoted wide. For example, if a user
-    was assigned to “Group A” in unit 10, you will get a column
-    `shuffle_10` with the value “Group A”.
+1.  **Downloads** results and metadata for all surveys in the run.
+2.  **Recognises** data types (converts “2023-01-01” to Dates, JSON
+    arrays to lists, etc.).
+3.  **Reverses** items ending in `R` (e.g., `neuro_3R`) based on item
+    choices.
+4.  **Aggregates** scales (calculates means for items with a shared
+    stem).
+5.  **Joins** all surveys into a single “wide” format (one row per
+    session).
 
-### Server-Side Filtering
+### Customizing the Fetch
 
-If your study is large-scale, involving thousands of participants,
-variables, and repetitions, you may want to only retrieve the data you
-need to save bandwidth and memory. This would also be the preferred way
-to get just the items that interest you when accessing results within
-your form run.
+You can toggle these behaviors using arguments if you want raw data or
+need to handle processing manually:
 
 ``` r
-# Fetch only specific surveys
-results <- formr_results("my-study-name", surveys = c("survey_1", "survey_2"))
+# Get processed data, but strictly separated by survey (no join)
+list_of_dfs <- formr_api_results("daily_diary", join = FALSE)
 
-# Fetch specific items (columns)
-results <- formr_results("my-study-name", item_names = c("age", "gender", "extraversion_1"))
+# Get raw data (types recognized, but NO reversing or scoring)
+raw_data <- formr_api_results("daily_diary", compute_scales = FALSE)
 ```
 
-## 2. The Processing Pipeline
+------------------------------------------------------------------------
 
-Statistical analysis of raw data from the server often requires further
-processing.
+## 3. Advanced: The Manual Pipeline
 
-The
-[`formr_post_process_results()`](http://rubenarslan.github.io/formr/reference/formr_post_process_results.md)
-function transforms this raw data into an analysis-ready format using
-the study’s metadata.
+If you used `compute_scales = FALSE` above, or if you are debugging why
+a specific scale isn’t calculating correctly, you can use the
+lower-level processing functions manually. These rely on the survey’s
+metadata (the item table).
+
+### A. Get Metadata
+
+Processing requires knowing which items are numeric, which are reversed
+(e.g., ends in `R`), and what the scale options are.
 
 ``` r
-# The "Magic" Command
-cleaned_data <- formr_post_process_results("my-study-name")
+# Fetch the run structure (contains all item metadata)
+metadata <- formr_api_run_structure("daily_diary")
 ```
 
-This single function wrapper performs four major steps:
+### B. Reverse Coding (`formr_api_reverse`)
 
-1.  **Fetches Metadata:** It downloads the survey properties (item
-    types, choice lists) to know *how* to process the data.
-2.  **Type Recognition:** Converts strings to Dates, and choice-based
-    numbers to Factors with correct labels.
-3.  **Reverse Coding:** Automatically reverses items ending in `R`.
-4.  **Aggregation:** Automatically computes mean scores for scale items.
-
-### Step-by-Step Breakdown
-
-If you prefer manual control, you can run these steps individually.
-
-#### A. Type Recognition (`formr_recognise()`)
-
-Uses the item metadata to assign classes.
-
-- **Choice items:** Converted to `haven_labelled` or factors. Labels
-  (e.g., “Strongly Agree”) are attached to values (e.g., 5).
-- **Dates:** Converted to `POSIXct`.
+This function automatically reverses items that end in `R` (e.g.,
+`bfi_neuro_3R`). It uses the item’s defined choices (e.g., 1 to 5) to
+calculate the reversal correctly: $New = (Max + Min) - Old$.
 
 ``` r
-# Manual Type Recognition
-items_nested <- formr_run_structure("my-study-name") # Get metadata
-items_flat <- formr:::.extract_items_from_run(items_nested)
-raw <- formr_results("my-study-name", join = TRUE) # Get data
-
-step1_data <- formr_recognise(item_list = items_flat, results = raw)
+# Apply reverse coding to raw results
+df_reversed <- formr_api_reverse(results = raw_data, item_list = metadata)
 ```
 
-#### B. Reverse Coding (`formr_reverse()`)
+*Result:* The column `bfi_neuro_3R` now contains reversed values. An
+attribute `reversed = TRUE` is added to the column for tracking.
 
-Looks for items ending in `R` (e.g., `neuroticism_3R`). It determines
-the minimum and maximum possible values from the survey metadata (the
-“choices” list) and applies the formula:
+### C. Aggregation (`formr_api_aggregate`)
 
-$$\text{New} = \left( \text{Max} + \text{Min} \right) - \text{Old}$$
+This function calculates mean scores for items sharing a common “stem”.
+For example, if you have `extra_1`, `extra_2`, and `extra_3R`, the
+function detects the stem `extra`, calculates the row-mean, and creates
+a new column `extra`.
 
 ``` r
-# Manual Reverse Coding
-step2_data <- formr_reverse(results = step1_data, item_list = items_flat)
+# Calculate scales (means)
+df_scored <- formr_api_aggregate(results = df_reversed, item_list = metadata)
 ```
 
-*Note: Attributes are added to the column (e.g., `reversal_const`) so
-you can verify the transformation.*
+*Result:* A new column `extra` is added to the dataframe containing the
+mean of the items.
 
-#### C. Aggregation (`formr_aggregate()`)
+------------------------------------------------------------------------
 
-Calculates mean scores for items sharing a common “stem”. For example,
-if you have `extra_1`, `extra_2`, and `extra_3R`, the function detects
-the stem `extra`, calculates the row-mean, and creates a new column
-`extra`.
+## 4. Full Workflow Example
+
+Here is a complete, reproducible snippet for a typical analysis script.
+Note how `formr_api_results` simplifies the process significantly
+compared to older versions of the package.
 
 ``` r
-# Manual Aggregation
-step3_data <- formr_aggregate(results = step2_data, item_list = items_flat)
+library(formr)
+library(dplyr)
+
+# 1. Connect
+formr_api_authenticate(host = "https://api.formr.org") # or your custom URL!
+
+# 2. Get Processed Data (Reversed & Scored)
+run_name <- "daily_diary"
+data <- formr_api_results(run_name)
+
+# 3. Analyze
+summary(clean_data$bfi_neuro) # This scale was computed automatically!
+# ...
 ```
 
-## 3. Handling Test Sessions
+## 5. Troubleshooting
 
-By default,
-[`formr_post_process_results()`](http://rubenarslan.github.io/formr/reference/formr_post_process_results.md)
-removes test sessions (sessions containing “XXX” in their code). You can
-keep them if you are debugging:
+### “My scale isn’t calculating!”
 
-``` r
-# Keep test users
-debug_data <- formr_post_process_results("my-study-name", remove_test_sessions = FALSE)
-```
+Ensure your variable names follow the `stem_number` or `stem_numberR`
+convention (e.g., `neuro_1`, `neuro_2R`). `formr_api_aggregate` (and
+thus `formr_api_results`) relies on this to group items.

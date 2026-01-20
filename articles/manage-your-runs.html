@@ -36,17 +36,17 @@
 <li><h6 class="dropdown-header" data-toc-skip>Basics</h6></li>
     <li><a class="dropdown-item" href="../articles/getting-started.html">Getting Started</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Project Management</h6></li>
-    <li><a class="dropdown-item" href="../articles/manage-your-studies.html">Manage your Studies (Workflow)</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Get your Results</h6></li>
+    <li><a class="dropdown-item" href="../articles/fetch-and-process-results.html">Fetch &amp; Process Results</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Run Administration</h6></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Project (Run) Management</h6></li>
+    <li><a class="dropdown-item" href="../articles/manage-your-projects.html">Manage your Projects</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Everything API</h6></li>
     <li><a class="dropdown-item" href="../articles/manage-your-runs.html">Manage your Runs</a></li>
     <li><a class="dropdown-item" href="../articles/manage-your-sessions.html">Manage your Sessions</a></li>
     <li><a class="dropdown-item" href="../articles/manage-your-surveys.html">Manage your Surveys</a></li>
     <li><a class="dropdown-item" href="../articles/manage-your-files.html">Manage your Files</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Analysis</h6></li>
-    <li><a class="dropdown-item" href="../articles/fetch-and-process-results.html">Fetch &amp; Process Results</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -88,9 +88,11 @@
     
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://rubenarslan.github.io/formr/">formr</a></span><span class="op">)</span></span></code></pre></div>
-<p>While the <code>formr_push_project</code> and
-<code>formr_pull_project</code> functions are excellent for managing
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://rubenarslan.github.io/formr/">formr</a></span><span class="op">)</span></span>
+<span><span class="co"># Automatically finds your stored keys</span></span>
+<span><span class="fu"><a href="../reference/formr_api_authenticate.html">formr_api_authenticate</a></span><span class="op">(</span>host <span class="op">=</span> <span class="st">"https://api.formr.org"</span><span class="op">)</span> <span class="co"># or your custom URL!</span></span></code></pre></div>
+<p>While the <code>formr_api_push_project</code> and
+<code>formr_api_pull_project</code> functions are excellent for managing
 file-based assets (surveys, CSS, images), sometimes you need direct
 control over the run’s configuration on the server.</p>
 <p>The <code>formr</code> package provides a suite of lower-level
@@ -100,12 +102,12 @@ programmatically.</p>
 <h2 id="listing-your-runs">Listing Your Runs<a class="anchor" aria-label="anchor" href="#listing-your-runs"></a>
 </h2>
 <p>To see an overview of all studies you have access to, use
-<code><a href="../reference/formr_runs.html">formr_runs()</a></code>. This returns a tidy data frame containing the
-run ID, name, and status flags (whether it is public, locked, or has
+<code><a href="../reference/formr_api_runs.html">formr_api_runs()</a></code>. This returns a tidy data frame containing
+the run ID, name, and status flags (whether it is public, locked, or has
 active cron jobs).</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># List all runs and their status</span></span>
-<span><span class="va">runs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_runs.html">formr_runs</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">runs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_api_runs.html">formr_api_runs</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Quickly check which runs are currently active/public</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">runs</span>, <span class="va">public</span> <span class="op">==</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
@@ -117,7 +119,7 @@ active cron jobs).</p>
 you are setting up a battery of studies programmatically.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create a new run named "pilot-study-v1"</span></span>
-<span><span class="fu"><a href="../reference/formr_create_run.html">formr_create_run</a></span><span class="op">(</span><span class="st">"pilot-study-v1"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/formr_api_create_run.html">formr_api_create_run</a></span><span class="op">(</span><span class="st">"pilot-study-v1"</span><span class="op">)</span></span></code></pre></div>
 <p>The function returns the public link to your new run upon
 success.</p>
 </div>
@@ -127,7 +129,7 @@ success.</p>
 <p>Once a run exists, you often need to toggle its settings—for example,
 locking it to prevent accidental edits during data collection or making
 it public for participants.</p>
-<p>The <code><a href="../reference/formr_run_settings.html">formr_run_settings()</a></code> function handles this.</p>
+<p>The <code><a href="../reference/formr_api_run_settings.html">formr_api_run_settings()</a></code> function handles this.</p>
 <ul>
 <li><p><strong>GET:</strong> If you provide only the run name, it
 returns the current settings.</p></li>
@@ -136,10 +138,10 @@ list, it updates the run.</p></li>
 </ul>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 1. View current settings</span></span>
-<span><span class="va">settings</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_run_settings.html">formr_run_settings</a></span><span class="op">(</span><span class="st">"pilot-study-v1"</span><span class="op">)</span></span>
+<span><span class="va">settings</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_api_run_settings.html">formr_api_run_settings</a></span><span class="op">(</span><span class="st">"pilot-study-v1"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 2. Update settings: Lock the run and make it public</span></span>
-<span><span class="fu"><a href="../reference/formr_run_settings.html">formr_run_settings</a></span><span class="op">(</span><span class="st">"pilot-study-v1"</span>, settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span><span class="fu"><a href="../reference/formr_api_run_settings.html">formr_api_run_settings</a></span><span class="op">(</span><span class="st">"pilot-study-v1"</span>, settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  locked <span class="op">=</span> <span class="cn">TRUE</span>,     <span class="co"># Prevent structure changes</span></span>
 <span>  public <span class="op">=</span> <span class="fl">2</span>,      <span class="co"># Allow participants to access via Link</span></span>
 <span>  expiresOn <span class="op">=</span> <span class="st">"2026-12-31"</span> </span>
@@ -160,11 +162,11 @@ a study design.</p>
 JSON file to create a 1:1 backup of the runs configuration.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Inspect structure in R</span></span>
-<span><span class="va">struct</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_run_structure.html">formr_run_structure</a></span><span class="op">(</span><span class="st">"pilot-study-v1"</span><span class="op">)</span></span>
+<span><span class="va">struct</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_api_run_structure.html">formr_api_run_structure</a></span><span class="op">(</span><span class="st">"pilot-study-v1"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">struct</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Save to file (Backup)</span></span>
-<span><span class="fu"><a href="../reference/formr_run_structure.html">formr_run_structure</a></span><span class="op">(</span><span class="st">"pilot-study-v1"</span>, file <span class="op">=</span> <span class="st">"pilot_v1_structure.json"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/formr_api_run_structure.html">formr_api_run_structure</a></span><span class="op">(</span><span class="st">"pilot-study-v1"</span>, file <span class="op">=</span> <span class="st">"pilot_v1_structure.json"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="importing-structure">Importing Structure<a class="anchor" aria-label="anchor" href="#importing-structure"></a>
@@ -175,7 +177,7 @@ apply it to multiple runs. If they are part of your JSON file, this will
 also create the necessary surveys for the run.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Overwrite the run's structure with a local JSON file</span></span>
-<span><span class="fu"><a href="../reference/formr_run_structure.html">formr_run_structure</a></span><span class="op">(</span><span class="st">"pilot-study-v1"</span>, structure_json_path <span class="op">=</span> <span class="st">"pilot_v1_structure.json"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/formr_api_run_structure.html">formr_api_run_structure</a></span><span class="op">(</span><span class="st">"pilot-study-v1"</span>, structure_json_path <span class="op">=</span> <span class="st">"pilot_v1_structure.json"</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -188,10 +190,10 @@ the run, including the structure, attached files, and all collected
 results. However, the surveys used in the run will be kept.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Delete a run (prompts for confirmation by default)</span></span>
-<span><span class="fu"><a href="../reference/formr_delete_run.html">formr_delete_run</a></span><span class="op">(</span><span class="st">"pilot-study-v1"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/formr_api_delete_run.html">formr_api_delete_run</a></span><span class="op">(</span><span class="st">"pilot-study-v1"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Force delete without confirmation (for automated scripts)</span></span>
-<span><span class="fu"><a href="../reference/formr_delete_run.html">formr_delete_run</a></span><span class="op">(</span><span class="st">"pilot-study-v1"</span>, prompt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/formr_api_delete_run.html">formr_api_delete_run</a></span><span class="op">(</span><span class="st">"pilot-study-v1"</span>, prompt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

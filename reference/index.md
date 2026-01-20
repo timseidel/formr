@@ -1,86 +1,137 @@
 # Package index
 
-## Data Processing and Results
+## Setup & Authentication
 
-Functions for handling survey results and data processing
+Connect to formr using the API or classic authentication
 
+- [`formr_store_keys()`](http://rubenarslan.github.io/formr/reference/formr_store_keys.md)
+  : Store Credentials in Keyring
+- [`formr_api_authenticate()`](http://rubenarslan.github.io/formr/reference/formr_api_authenticate.md)
+  : Authenticate with formr
+- [`formr_api_logout()`](http://rubenarslan.github.io/formr/reference/formr_api_logout.md)
+  : Revoke Access Token (Logout)
+- [`formr_api_session()`](http://rubenarslan.github.io/formr/reference/formr_api_session.md)
+  : Get Current API session
 - [`formr_connect()`](http://rubenarslan.github.io/formr/reference/formr_connect.md)
   : Connect to formr
 - [`formr_disconnect()`](http://rubenarslan.github.io/formr/reference/formr_disconnect.md)
   : Disconnect from formr
 - [`formr_last_host()`](http://rubenarslan.github.io/formr/reference/formr_last_host.md)
   : Get the last specified host
-- [`formr_store_keys()`](http://rubenarslan.github.io/formr/reference/formr_store_keys.md)
-  : Store keys in keyring
-- [`formr_items()`](http://rubenarslan.github.io/formr/reference/formr_items.md)
-  : Download items from formr
-- [`formr_item_displays()`](http://rubenarslan.github.io/formr/reference/formr_item_displays.md)
-  : Download detailed result timings and display counts from formr
-- [`formr_upload_items()`](http://rubenarslan.github.io/formr/reference/formr_upload_items.md)
-  : Upload new item table
-- [`formr_simulate_from_items()`](http://rubenarslan.github.io/formr/reference/formr_simulate_from_items.md)
-  : Simulate data based on item table
+
+## API - Project Management
+
+Tools for managing runs and syncing local files with the server
+
+- [`formr_api_pull_project()`](http://rubenarslan.github.io/formr/reference/formr_api_pull_project.md)
+  : Pull Project from Server Scaffolds folder structure if missing, then
+  overwrites local files with Server state.
+- [`formr_api_push_project()`](http://rubenarslan.github.io/formr/reference/formr_api_push_project.md)
+  : Push Project to Server
+- [`formr_api_backup_run()`](http://rubenarslan.github.io/formr/reference/formr_api_backup_run.md)
+  : Backup a study
+
+## API - Runs & Sessions
+
+Manage runs, create sessions, and perform actions
+
+- [`formr_api_runs()`](http://rubenarslan.github.io/formr/reference/formr_api_runs.md)
+  : List all runs
+- [`formr_api_create_run()`](http://rubenarslan.github.io/formr/reference/formr_api_create_run.md)
+  : Create a new run
+- [`formr_api_run_settings()`](http://rubenarslan.github.io/formr/reference/formr_api_run_settings.md)
+  : Get or Update Run Settings
+- [`formr_api_run_structure()`](http://rubenarslan.github.io/formr/reference/formr_api_run_structure.md)
+  : Get or Update Run Structure (Run Units)
+- [`formr_api_delete_run()`](http://rubenarslan.github.io/formr/reference/formr_api_delete_run.md)
+  : Delete a Run
+- [`formr_api_sessions()`](http://rubenarslan.github.io/formr/reference/formr_api_sessions.md)
+  : List Sessions in a Run
+- [`formr_api_create_session()`](http://rubenarslan.github.io/formr/reference/formr_api_create_session.md)
+  : Create Session(s)
+- [`formr_api_session_action()`](http://rubenarslan.github.io/formr/reference/formr_api_session_action.md)
+  : Perform Action on Session(s)
+
+## API - Surveys & Files
+
+Upload and manage survey structures and attached files
+
+- [`formr_api_surveys()`](http://rubenarslan.github.io/formr/reference/formr_api_surveys.md)
+  : List Surveys
+- [`formr_api_survey_structure()`](http://rubenarslan.github.io/formr/reference/formr_api_survey_structure.md)
+  : Get Survey Structure (Items)
+- [`formr_api_upload_survey()`](http://rubenarslan.github.io/formr/reference/formr_api_upload_survey.md)
+  : Upload/Update Survey
+- [`formr_api_delete_survey()`](http://rubenarslan.github.io/formr/reference/formr_api_delete_survey.md)
+  : Delete a Survey
+- [`formr_api_files()`](http://rubenarslan.github.io/formr/reference/formr_api_files.md)
+  : List files attached to a run
+- [`formr_api_upload_file()`](http://rubenarslan.github.io/formr/reference/formr_api_upload_file.md)
+  : Upload File(s) to Run
+- [`formr_api_delete_file()`](http://rubenarslan.github.io/formr/reference/formr_api_delete_file.md)
+  : Delete file(s) from a run
+- [`formr_api_delete_all_files()`](http://rubenarslan.github.io/formr/reference/formr_api_delete_all_files.md)
+  : Delete ALL files attached to a run
+
+## API - Results
+
+Fetch, recognize, and process results using the new pipeline
+
+- [`formr_api_results()`](http://rubenarslan.github.io/formr/reference/formr_api_results.md)
+  : Get and Process Run Results
+- [`formr_api_fetch_results()`](http://rubenarslan.github.io/formr/reference/formr_api_fetch_results.md)
+  : Lower-level API Result Fetcher
+- [`formr_api_recognise()`](http://rubenarslan.github.io/formr/reference/formr_api_recognise.md)
+  : Apply Type Definitions and Labels
+- [`formr_api_reverse()`](http://rubenarslan.github.io/formr/reference/formr_api_reverse.md)
+  : Reverse Items and Update Labels
+- [`formr_api_aggregate()`](http://rubenarslan.github.io/formr/reference/formr_api_aggregate.md)
+  : Aggregate Scales
+
+## Classic formr Functions
+
+Classic functions for retrieving data
+
 - [`formr_results()`](http://rubenarslan.github.io/formr/reference/formr_results.md)
   : Download processed, aggregated results from formr
 - [`formr_raw_results()`](http://rubenarslan.github.io/formr/reference/formr_raw_results.md)
   : Download data from formr
-- [`formr_uploaded_files()`](http://rubenarslan.github.io/formr/reference/formr_uploaded_files.md)
-  : Download uploaded files from formr
-- [`formr_backup_files()`](http://rubenarslan.github.io/formr/reference/formr_backup_files.md)
-  : Backup uploaded files from formr
 - [`formr_post_process_results()`](http://rubenarslan.github.io/formr/reference/formr_post_process_results.md)
   : Processed, aggregated results
-- [`formr_aggregate()`](http://rubenarslan.github.io/formr/reference/formr_aggregate.md)
-  : Aggregate data based on item table
 - [`formr_recognise()`](http://rubenarslan.github.io/formr/reference/formr_recognise.md)
   : Recognise data types based on item table
+- [`formr_aggregate()`](http://rubenarslan.github.io/formr/reference/formr_aggregate.md)
+  : Aggregate data based on item table
 - [`formr_reverse()`](http://rubenarslan.github.io/formr/reference/formr_reverse.md)
   : Reverse items based on item table or a fallback_max
-- [`formr_run_structure()`](http://rubenarslan.github.io/formr/reference/formr_run_structure.md)
-  : Download run structure from formr
+- [`formr_items()`](http://rubenarslan.github.io/formr/reference/formr_items.md)
+  : Download items from formr
+- [`formr_item_displays()`](http://rubenarslan.github.io/formr/reference/formr_item_displays.md)
+  : Download detailed result timings and display counts from formr
+- [`formr_uploaded_files()`](http://rubenarslan.github.io/formr/reference/formr_uploaded_files.md)
+  : Download uploaded files from formr
+- [`formr_shuffled()`](http://rubenarslan.github.io/formr/reference/formr_shuffled.md)
+  : Download random groups
 - [`formr_user_detail()`](http://rubenarslan.github.io/formr/reference/formr_user_detail.md)
   : Download random groups
 - [`formr_user_overview()`](http://rubenarslan.github.io/formr/reference/formr_user_overview.md)
-  : Download random groups
-- [`formr_shuffled()`](http://rubenarslan.github.io/formr/reference/formr_shuffled.md)
   : Download random groups
 - [`formr_backup_study()`](http://rubenarslan.github.io/formr/reference/formr_backup_study.md)
   : Backup a study
 - [`formr_backup_surveys()`](http://rubenarslan.github.io/formr/reference/formr_backup_surveys.md)
   : Backup surveys
+- [`formr_backup_files()`](http://rubenarslan.github.io/formr/reference/formr_backup_files.md)
+  : Backup uploaded files from formr
+- [`formr_upload_items()`](http://rubenarslan.github.io/formr/reference/formr_upload_items.md)
+  : Upload new item table
+- [`formr_run_structure()`](http://rubenarslan.github.io/formr/reference/formr_run_structure.md)
+  : Download run structure from formr
+- [`formr_simulate_from_items()`](http://rubenarslan.github.io/formr/reference/formr_simulate_from_items.md)
+  : Simulate data based on item table
 
-## formr OAuth API and Connection
+## Feedback & Plotting
 
-Functions for OAuth API access and connection management
-
-- [`formr_api_access_token()`](http://rubenarslan.github.io/formr/reference/formr_api_access_token.md)
-  : Connect to formr API
-- [`formr_api_results()`](http://rubenarslan.github.io/formr/reference/formr_api_results.md)
-  : Get result from formr
-- [`formr_api_session()`](http://rubenarslan.github.io/formr/reference/formr_api_session.md)
-  : Get current API session Return or set URL in list form for formr API
-  (if available)
-
-## Item Management
-
-Functions for managing survey items, scales, and related operations
-
-- [`item()`](http://rubenarslan.github.io/formr/reference/item.md) : get
-  item from survey attribute
-- [`items()`](http://rubenarslan.github.io/formr/reference/items.md) :
-  get item list from survey attributes
-- [`aggregate_and_document_scale()`](http://rubenarslan.github.io/formr/reference/aggregate_and_document_scale.md)
-  : Aggregate variables and remember which variables this were
-- [`choice_labels_for_values()`](http://rubenarslan.github.io/formr/reference/choice_labels_for_values.md)
-  : switch choice values with labels
-- [`reverse_labelled_values()`](http://rubenarslan.github.io/formr/reference/reverse_labelled_values.md)
-  : Reverse labelled values
-- [`as.data.frame(`*`<formr_item_list>`*`)`](http://rubenarslan.github.io/formr/reference/as.data.frame.formr_item_list.md)
-  : Transform formr_item_list into a data.frame for ease of use
-
-## Feedback and Plotting
-
-Functions for visualization and feedback generation
+Generate feedback plots and text for participants
 
 - [`qplot_on_normal()`](http://rubenarslan.github.io/formr/reference/qplot_on_normal.md)
   : Plot a normed value on the standard normal
@@ -90,10 +141,12 @@ Functions for visualization and feedback generation
   : Time-polar plot
 - [`feedback_chunk()`](http://rubenarslan.github.io/formr/reference/feedback_chunk.md)
   : Text feedback based on groups
+- [`email_image()`](http://rubenarslan.github.io/formr/reference/email_image.md)
+  : generates valid email cids
 
-## Rendering and Markdown
+## RMarkdown & Rendering
 
-Functions for rendering and markdown processing
+Helpers for rendering RMarkdown within formr
 
 - [`formr_render()`](http://rubenarslan.github.io/formr/reference/formr_render.md)
   : render text for formr
@@ -123,29 +176,9 @@ Functions for rendering and markdown processing
 - [`print(`*`<knit_asis>`*`)`](http://rubenarslan.github.io/formr/reference/print.knit_asis.md)
   : Print new lines in knit_asis outputs
 
-## Time and Messaging
+## Helpers & Shorthands
 
-Functions for time-related operations and messaging
-
-- [`in_time_window()`](http://rubenarslan.github.io/formr/reference/in_time_window.md)
-  : checks whether the current time is in a certain time window
-- [`next_day()`](http://rubenarslan.github.io/formr/reference/next_day.md)
-  : checks whether a new day has broken (date has increased by at least
-  one day)
-- [`time_passed()`](http://rubenarslan.github.io/formr/reference/time_passed.md)
-  : checks how much time has passed relative to the user's last action
-- [`text_message_clickatell()`](http://rubenarslan.github.io/formr/reference/text_message_clickatell.md)
-  : Send text message via Clickatell
-- [`text_message_massenversand()`](http://rubenarslan.github.io/formr/reference/text_message_massenversand.md)
-  : Send text message via Massenversand.de
-- [`text_message_twilio()`](http://rubenarslan.github.io/formr/reference/text_message_twilio.md)
-  : Send text message via Twilio
-- [`email_image()`](http://rubenarslan.github.io/formr/reference/email_image.md)
-  : generates valid email cids
-
-## Helper Functions
-
-Utility functions and operators for common operations
+Utility functions for writing survey logic
 
 - [`first()`](http://rubenarslan.github.io/formr/reference/first.md) :
   Gives the first non-missing element
@@ -179,8 +212,15 @@ Utility functions and operators for common operations
   Like [`ifelse()`](https://rdrr.io/r/base/ifelse.html), but allows you
   to assign a third value to missings.
 
-- [`rescue_attributes()`](http://rubenarslan.github.io/formr/reference/rescue_attributes.md)
-  : Rescue lost attributes
+- [`time_passed()`](http://rubenarslan.github.io/formr/reference/time_passed.md)
+  : checks how much time has passed relative to the user's last action
+
+- [`next_day()`](http://rubenarslan.github.io/formr/reference/next_day.md)
+  : checks whether a new day has broken (date has increased by at least
+  one day)
+
+- [`in_time_window()`](http://rubenarslan.github.io/formr/reference/in_time_window.md)
+  : checks whether the current time is in a certain time window
 
 - [`` `%contains%` ``](http://rubenarslan.github.io/formr/reference/grapes-contains-grapes.md)
   : check whether a character string contains another
@@ -197,6 +237,39 @@ Utility functions and operators for common operations
 - [`random_date_in_range()`](http://rubenarslan.github.io/formr/reference/random_date_in_range.md)
   : Random date in range
 
+## Data Wrangling
+
+Internal utilities for item and scale manipulation
+
+- [`aggregate_and_document_scale()`](http://rubenarslan.github.io/formr/reference/aggregate_and_document_scale.md)
+  : Aggregate variables and remember which variables this were
+- [`choice_labels_for_values()`](http://rubenarslan.github.io/formr/reference/choice_labels_for_values.md)
+  : switch choice values with labels
+- [`reverse_labelled_values()`](http://rubenarslan.github.io/formr/reference/reverse_labelled_values.md)
+  : Reverse labelled values
+- [`rescue_attributes()`](http://rubenarslan.github.io/formr/reference/rescue_attributes.md)
+  : Rescue lost attributes
+- [`item()`](http://rubenarslan.github.io/formr/reference/item.md) : get
+  item from survey attribute
+- [`items()`](http://rubenarslan.github.io/formr/reference/items.md) :
+  get item list from survey attributes
+- [`as.data.frame(`*`<formr_item_list>`*`)`](http://rubenarslan.github.io/formr/reference/as.data.frame.formr_item_list.md)
+  : Transform formr_item_list into a data.frame for ease of use
+- [`as.data.frame(`*`<formr_api_run_structure>`*`)`](http://rubenarslan.github.io/formr/reference/as.data.frame.formr_api_run_structure.md)
+  : Convert formr run structure to data.frame
+- [`print(`*`<formr_api_run_structure>`*`)`](http://rubenarslan.github.io/formr/reference/print.formr_api_run_structure.md)
+  : Print method for formr run structure
 - [`get_opencpu_rds()`](http://rubenarslan.github.io/formr/reference/get_opencpu_rds.md)
   : pass in the url to the RDS representation of a openCPU session
   object, get the object
+
+## Text Messaging
+
+Integrations with SMS providers
+
+- [`text_message_twilio()`](http://rubenarslan.github.io/formr/reference/text_message_twilio.md)
+  : Send text message via Twilio
+- [`text_message_clickatell()`](http://rubenarslan.github.io/formr/reference/text_message_clickatell.md)
+  : Send text message via Clickatell
+- [`text_message_massenversand()`](http://rubenarslan.github.io/formr/reference/text_message_massenversand.md)
+  : Send text message via Massenversand.de

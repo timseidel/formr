@@ -11,6 +11,8 @@
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Fetch &amp; Process Results">
+<meta name="description" content="Using the V1 API to download, reverse, and aggregate survey data">
+<meta property="og:description" content="Using the V1 API to download, reverse, and aggregate survey data">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -36,17 +38,17 @@
 <li><h6 class="dropdown-header" data-toc-skip>Basics</h6></li>
     <li><a class="dropdown-item" href="../articles/getting-started.html">Getting Started</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Project Management</h6></li>
-    <li><a class="dropdown-item" href="../articles/manage-your-studies.html">Manage your Studies (Workflow)</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Get your Results</h6></li>
+    <li><a class="dropdown-item" href="../articles/fetch-and-process-results.html">Fetch &amp; Process Results</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Run Administration</h6></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Project (Run) Management</h6></li>
+    <li><a class="dropdown-item" href="../articles/manage-your-projects.html">Manage your Projects</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Everything API</h6></li>
     <li><a class="dropdown-item" href="../articles/manage-your-runs.html">Manage your Runs</a></li>
     <li><a class="dropdown-item" href="../articles/manage-your-sessions.html">Manage your Sessions</a></li>
     <li><a class="dropdown-item" href="../articles/manage-your-surveys.html">Manage your Surveys</a></li>
     <li><a class="dropdown-item" href="../articles/manage-your-files.html">Manage your Files</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Analysis</h6></li>
-    <li><a class="dropdown-item" href="../articles/fetch-and-process-results.html">Fetch &amp; Process Results</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -89,161 +91,145 @@
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://rubenarslan.github.io/formr/">formr</a></span><span class="op">)</span></span></code></pre></div>
-<p>One of the strongest features of the <code>formr</code> package is
-the ability to create a reproducible data import pipeline. Instead of
-manually downloading CSVs from a website, renaming columns, and
-calculating scales in a messy script, you can fetch, merge, and clean
-your data in a few lines of code.</p>
+<p>The new <code>formr</code> API (V1) provides a streamlined pipeline
+for importing data. The API strictly separates <strong>fetching</strong>
+(getting data from the server) from <strong>wrangling</strong>
+(processing types, reversals, and scales), but the package provides a
+powerful convenience wrapper, <code><a href="../reference/formr_api_results.html">formr_api_results()</a></code>, to
+handle the entire process in one step.</p>
 <div class="section level2">
-<h2 id="fetching-data">1. Fetching Data<a class="anchor" aria-label="anchor" href="#fetching-data"></a>
+<h2 id="authentication">1. Authentication<a class="anchor" aria-label="anchor" href="#authentication"></a>
 </h2>
-<p>The primary function for retrieving data is
-<code><a href="../reference/formr_results.html">formr_results()</a></code>.</p>
-<div class="section level3">
-<h3 id="basic-usage">Basic Usage<a class="anchor" aria-label="anchor" href="#basic-usage"></a>
-</h3>
-<p>By default, <code>formr_results</code> fetches all the surveys
-currently in use and all the shuffle units ever associated with a
-run.</p>
+<p>Before fetching data, ensure you are authenticated. If you have
+stored your keys (see <a href="getting-started.html">Getting
+Started</a>), this is automatic.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Fetch all data for a run</span></span>
-<span><span class="va">raw_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_results.html">formr_results</a></span><span class="op">(</span><span class="st">"my-study-name"</span><span class="op">)</span></span></code></pre></div>
-<p>If your run contains multiple surveys (e.g., a “Baseline” and a
-“Diary”), the function returns a <strong>named list</strong> of tibbles,
-one for each survey.</p>
+<code class="sourceCode R"><span><span class="co"># Authenticate using stored credentials</span></span>
+<span><span class="fu"><a href="../reference/formr_api_authenticate.html">formr_api_authenticate</a></span><span class="op">(</span>host <span class="op">=</span> <span class="st">"https://api.formr.org"</span><span class="op">)</span> <span class="co"># or your custom URL!</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="automatic-joining-join-true">Automatic Joining (<code>join = TRUE</code>)<a class="anchor" aria-label="anchor" href="#automatic-joining-join-true"></a>
-</h3>
-<p>In most analysis scenarios, you want a single “wide” dataset where
-one row represents one session. Setting <code>join = TRUE</code> handles
-this automatically.</p>
+<div class="section level2">
+<h2 id="the-one-stop-solution-formr_api_results">2. The One-Stop Solution (<code>formr_api_results</code>)<a class="anchor" aria-label="anchor" href="#the-one-stop-solution-formr_api_results"></a>
+</h2>
+<p>The primary function is <code><a href="../reference/formr_api_results.html">formr_api_results()</a></code>. By default,
+it performs a “Smart Fetch” that handles everything from download to
+psychometric scoring.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Fetch and merge everything by session ID</span></span>
-<span><span class="va">joined_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_results.html">formr_results</a></span><span class="op">(</span><span class="st">"my-study-name"</span>, join <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><strong>What happens during the join?</strong></p>
+<code class="sourceCode R"><span><span class="co"># Fetch, reverse, aggregate, and join all data</span></span>
+<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_api_results.html">formr_api_results</a></span><span class="op">(</span>run_name <span class="op">=</span> <span class="st">"daily_diary"</span><span class="op">)</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="what-does-formr_api_results-do-by-default">What does <code>formr_api_results</code> do by default?<a class="anchor" aria-label="anchor" href="#what-does-formr_api_results-do-by-default"></a>
+</h3>
 <ol style="list-style-type: decimal">
 <li>
-<strong>Merging:</strong> Surveys are full-joined by the
-<code>session</code> identifier.</li>
+<strong>Downloads</strong> results and metadata for all surveys in
+the run.</li>
 <li>
-<strong>Conflict Resolution:</strong> If variable names collide
-(e.g., both surveys have a variable named <code>created</code>), they
-are suffixed with the survey name (e.g., <code>created_baseline</code>,
-<code>created_diary</code>).</li>
+<strong>Recognises</strong> data types (converts “2023-01-01” to
+Dates, JSON arrays to lists, etc.).</li>
 <li>
-<strong>Shuffles:</strong> If your run uses randomization
-(Shuffles), the group assignments are automatically pivoted wide. For
-example, if a user was assigned to “Group A” in unit 10, you will get a
-column <code>shuffle_10</code> with the value “Group A”.</li>
+<strong>Reverses</strong> items ending in <code>R</code> (e.g.,
+<code>neuro_3R</code>) based on item choices.</li>
+<li>
+<strong>Aggregates</strong> scales (calculates means for items with
+a shared stem).</li>
+<li>
+<strong>Joins</strong> all surveys into a single “wide” format (one
+row per session).</li>
 </ol>
 </div>
 <div class="section level3">
-<h3 id="server-side-filtering">Server-Side Filtering<a class="anchor" aria-label="anchor" href="#server-side-filtering"></a>
+<h3 id="customizing-the-fetch">Customizing the Fetch<a class="anchor" aria-label="anchor" href="#customizing-the-fetch"></a>
 </h3>
-<p>If your study is large-scale, involving thousands of participants,
-variables, and repetitions, you may want to only retrieve the data you
-need to save bandwidth and memory. This would also be the preferred way
-to get just the items that interest you when accessing results within
-your form run.</p>
+<p>You can toggle these behaviors using arguments if you want raw data
+or need to handle processing manually:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Fetch only specific surveys</span></span>
-<span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_results.html">formr_results</a></span><span class="op">(</span><span class="st">"my-study-name"</span>, surveys <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"survey_1"</span>, <span class="st">"survey_2"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Get processed data, but strictly separated by survey (no join)</span></span>
+<span><span class="va">list_of_dfs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_api_results.html">formr_api_results</a></span><span class="op">(</span><span class="st">"daily_diary"</span>, join <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Fetch specific items (columns)</span></span>
-<span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_results.html">formr_results</a></span><span class="op">(</span><span class="st">"my-study-name"</span>, item_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age"</span>, <span class="st">"gender"</span>, <span class="st">"extraversion_1"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Get raw data (types recognized, but NO reversing or scoring)</span></span>
+<span><span class="va">raw_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_api_results.html">formr_api_results</a></span><span class="op">(</span><span class="st">"daily_diary"</span>, compute_scales <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<hr>
 </div>
 </div>
 <div class="section level2">
-<h2 id="the-processing-pipeline">2. The Processing Pipeline<a class="anchor" aria-label="anchor" href="#the-processing-pipeline"></a>
+<h2 id="advanced-the-manual-pipeline">3. Advanced: The Manual Pipeline<a class="anchor" aria-label="anchor" href="#advanced-the-manual-pipeline"></a>
 </h2>
-<p>Statistical analysis of raw data from the server often requires
-further processing.</p>
-<p>The <code><a href="../reference/formr_post_process_results.html">formr_post_process_results()</a></code> function transforms
-this raw data into an analysis-ready format using the study’s
-metadata.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># The "Magic" Command</span></span>
-<span><span class="va">cleaned_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_post_process_results.html">formr_post_process_results</a></span><span class="op">(</span><span class="st">"my-study-name"</span><span class="op">)</span></span></code></pre></div>
-<p>This single function wrapper performs four major steps:</p>
-<ol style="list-style-type: decimal">
-<li>
-<strong>Fetches Metadata:</strong> It downloads the survey
-properties (item types, choice lists) to know <em>how</em> to process
-the data.</li>
-<li>
-<strong>Type Recognition:</strong> Converts strings to Dates, and
-choice-based numbers to Factors with correct labels.</li>
-<li>
-<strong>Reverse Coding:</strong> Automatically reverses items ending
-in <code>R</code>.</li>
-<li>
-<strong>Aggregation:</strong> Automatically computes mean scores for
-scale items.</li>
-</ol>
+<p>If you used <code>compute_scales = FALSE</code> above, or if you are
+debugging why a specific scale isn’t calculating correctly, you can use
+the lower-level processing functions manually. These rely on the
+survey’s metadata (the item table).</p>
 <div class="section level3">
-<h3 id="step-by-step-breakdown">Step-by-Step Breakdown<a class="anchor" aria-label="anchor" href="#step-by-step-breakdown"></a>
+<h3 id="a--get-metadata">A. Get Metadata<a class="anchor" aria-label="anchor" href="#a--get-metadata"></a>
 </h3>
-<p>If you prefer manual control, you can run these steps
-individually.</p>
-<div class="section level4">
-<h4 id="a--type-recognition-formr_recognise">A. Type Recognition (<code>formr_recognise()</code>)<a class="anchor" aria-label="anchor" href="#a--type-recognition-formr_recognise"></a>
-</h4>
-<p>Uses the item metadata to assign classes.</p>
-<ul>
-<li>
-<strong>Choice items:</strong> Converted to
-<code>haven_labelled</code> or factors. Labels (e.g., “Strongly Agree”)
-are attached to values (e.g., 5).</li>
-<li>
-<strong>Dates:</strong> Converted to <code>POSIXct</code>.</li>
-</ul>
+<p>Processing requires knowing which items are numeric, which are
+reversed (e.g., ends in <code>R</code>), and what the scale options
+are.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Fetch the run structure (contains all item metadata)</span></span>
+<span><span class="va">metadata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_api_run_structure.html">formr_api_run_structure</a></span><span class="op">(</span><span class="st">"daily_diary"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="b--reverse-coding-formr_api_reverse">B. Reverse Coding (<code>formr_api_reverse</code>)<a class="anchor" aria-label="anchor" href="#b--reverse-coding-formr_api_reverse"></a>
+</h3>
+<p>This function automatically reverses items that end in <code>R</code>
+(e.g., <code>bfi_neuro_3R</code>). It uses the item’s defined choices
+(e.g., 1 to 5) to calculate the reversal correctly:
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mi>e</mi><mi>w</mi><mo>=</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>M</mi><mi>a</mi><mi>x</mi><mo>+</mo><mi>M</mi><mi>i</mi><mi>n</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>−</mo><mi>O</mi><mi>l</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">New = (Max + Min) - Old</annotation></semantics></math>.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Manual Type Recognition</span></span>
-<span><span class="va">items_nested</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_run_structure.html">formr_run_structure</a></span><span class="op">(</span><span class="st">"my-study-name"</span><span class="op">)</span> <span class="co"># Get metadata</span></span>
-<span><span class="va">items_flat</span> <span class="op">&lt;-</span> <span class="fu">formr</span><span class="fu">:::</span><span class="fu">.extract_items_from_run</span><span class="op">(</span><span class="va">items_nested</span><span class="op">)</span></span>
-<span><span class="va">raw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_results.html">formr_results</a></span><span class="op">(</span><span class="st">"my-study-name"</span>, join <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="co"># Get data</span></span>
-<span></span>
-<span><span class="va">step1_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_recognise.html">formr_recognise</a></span><span class="op">(</span>item_list <span class="op">=</span> <span class="va">items_flat</span>, results <span class="op">=</span> <span class="va">raw</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Apply reverse coding to raw results</span></span>
+<span><span class="va">df_reversed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_api_reverse.html">formr_api_reverse</a></span><span class="op">(</span>results <span class="op">=</span> <span class="va">raw_data</span>, item_list <span class="op">=</span> <span class="va">metadata</span><span class="op">)</span></span></code></pre></div>
+<p><em>Result:</em> The column <code>bfi_neuro_3R</code> now contains
+reversed values. An attribute <code>reversed = TRUE</code> is added to
+the column for tracking.</p>
 </div>
-<div class="section level4">
-<h4 id="b--reverse-coding-formr_reverse">B. Reverse Coding (<code>formr_reverse()</code>)<a class="anchor" aria-label="anchor" href="#b--reverse-coding-formr_reverse"></a>
-</h4>
-<p>Looks for items ending in <code>R</code> (e.g.,
-<code>neuroticism_3R</code>). It determines the minimum and maximum
-possible values from the survey metadata (the “choices” list) and
-applies the formula:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">New</mtext><mo>=</mo><mrow><mo stretchy="true" form="prefix">(</mo><mtext mathvariant="normal">Max</mtext><mo>+</mo><mtext mathvariant="normal">Min</mtext><mo stretchy="true" form="postfix">)</mo></mrow><mo>−</mo><mtext mathvariant="normal">Old</mtext></mrow><annotation encoding="application/x-tex">\text{New} = (\text{Max} + \text{Min}) - \text{Old}</annotation></semantics></math></p>
+<div class="section level3">
+<h3 id="c--aggregation-formr_api_aggregate">C. Aggregation (<code>formr_api_aggregate</code>)<a class="anchor" aria-label="anchor" href="#c--aggregation-formr_api_aggregate"></a>
+</h3>
+<p>This function calculates mean scores for items sharing a common
+“stem”. For example, if you have <code>extra_1</code>,
+<code>extra_2</code>, and <code>extra_3R</code>, the function detects
+the stem <code>extra</code>, calculates the row-mean, and creates a new
+column <code>extra</code>.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Manual Reverse Coding</span></span>
-<span><span class="va">step2_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_reverse.html">formr_reverse</a></span><span class="op">(</span>results <span class="op">=</span> <span class="va">step1_data</span>, item_list <span class="op">=</span> <span class="va">items_flat</span><span class="op">)</span></span></code></pre></div>
-<p><em>Note: Attributes are added to the column (e.g.,
-<code>reversal_const</code>) so you can verify the
-transformation.</em></p>
-</div>
-<div class="section level4">
-<h4 id="c--aggregation-formr_aggregate">C. Aggregation (<code>formr_aggregate()</code>)<a class="anchor" aria-label="anchor" href="#c--aggregation-formr_aggregate"></a>
-</h4>
-<p>Calculates mean scores for items sharing a common “stem”. For
-example, if you have <code>extra_1</code>, <code>extra_2</code>, and
-<code>extra_3R</code>, the function detects the stem <code>extra</code>,
-calculates the row-mean, and creates a new column
-<code>extra</code>.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Manual Aggregation</span></span>
-<span><span class="va">step3_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_aggregate.html">formr_aggregate</a></span><span class="op">(</span>results <span class="op">=</span> <span class="va">step2_data</span>, item_list <span class="op">=</span> <span class="va">items_flat</span><span class="op">)</span></span></code></pre></div>
-</div>
+<code class="sourceCode R"><span><span class="co"># Calculate scales (means)</span></span>
+<span><span class="va">df_scored</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_api_aggregate.html">formr_api_aggregate</a></span><span class="op">(</span>results <span class="op">=</span> <span class="va">df_reversed</span>, item_list <span class="op">=</span> <span class="va">metadata</span><span class="op">)</span></span></code></pre></div>
+<p><em>Result:</em> A new column <code>extra</code> is added to the
+dataframe containing the mean of the items.</p>
+<hr>
 </div>
 </div>
 <div class="section level2">
-<h2 id="handling-test-sessions">3. Handling Test Sessions<a class="anchor" aria-label="anchor" href="#handling-test-sessions"></a>
+<h2 id="full-workflow-example">4. Full Workflow Example<a class="anchor" aria-label="anchor" href="#full-workflow-example"></a>
 </h2>
-<p>By default, <code><a href="../reference/formr_post_process_results.html">formr_post_process_results()</a></code> removes test
-sessions (sessions containing “XXX” in their code). You can keep them if
-you are debugging:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Keep test users</span></span>
-<span><span class="va">debug_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_post_process_results.html">formr_post_process_results</a></span><span class="op">(</span><span class="st">"my-study-name"</span>, remove_test_sessions <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p>Here is a complete, reproducible snippet for a typical analysis
+script. Note how <code>formr_api_results</code> simplifies the process
+significantly compared to older versions of the package.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://rubenarslan.github.io/formr/">formr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 1. Connect</span></span>
+<span><span class="fu"><a href="../reference/formr_api_authenticate.html">formr_api_authenticate</a></span><span class="op">(</span>host <span class="op">=</span> <span class="st">"https://api.formr.org"</span><span class="op">)</span> <span class="co"># or your custom URL!</span></span>
+<span></span>
+<span><span class="co"># 2. Get Processed Data (Reversed &amp; Scored)</span></span>
+<span><span class="va">run_name</span> <span class="op">&lt;-</span> <span class="st">"daily_diary"</span></span>
+<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/formr_api_results.html">formr_api_results</a></span><span class="op">(</span><span class="va">run_name</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 3. Analyze</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">clean_data</span><span class="op">$</span><span class="va">bfi_neuro</span><span class="op">)</span> <span class="co"># This scale was computed automatically!</span></span>
+<span><span class="co"># ...</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="troubleshooting">5. Troubleshooting<a class="anchor" aria-label="anchor" href="#troubleshooting"></a>
+</h2>
+<div class="section level3">
+<h3 id="my-scale-isnt-calculating">“My scale isn’t calculating!”<a class="anchor" aria-label="anchor" href="#my-scale-isnt-calculating"></a>
+</h3>
+<p>Ensure your variable names follow the <code>stem_number</code> or
+<code>stem_numberR</code> convention (e.g., <code>neuro_1</code>,
+<code>neuro_2R</code>). <code>formr_api_aggregate</code> (and thus
+<code>formr_api_results</code>) relies on this to group items.</p>
+</div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

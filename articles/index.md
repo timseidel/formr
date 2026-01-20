@@ -1,37 +1,28 @@
 # Articles
 
-### Basics
+### All vignettes
 
-Essential guides for getting started with the formr package
+- [Fetch & Process
+  Results](http://rubenarslan.github.io/formr/articles/fetch-and-process-results.md):
+
+  Using the V1 API to download, reverse, and aggregate survey data
 
 - [Getting
   Started](http://rubenarslan.github.io/formr/articles/getting-started.md):
 
-### Project Management (Local \<-\> Server)
+  Installation, Authentication, and Workflow
 
-How to sync your surveys, files, and settings using the local
-development workflow
-
-- [Manage your
-  Studies](http://rubenarslan.github.io/formr/articles/manage-your-studies.md):
-
-### Run Administration
-
-Controlling the run flow and managing participants, files and surveys
-directly
-
-- [Manage your
-  Runs](http://rubenarslan.github.io/formr/articles/manage-your-runs.md):
-- [Manage your
-  Sessions](http://rubenarslan.github.io/formr/articles/manage-your-sessions.md):
-- [Manage your
-  Surveys](http://rubenarslan.github.io/formr/articles/manage-your-surveys.md):
 - [Manage your
   Files](http://rubenarslan.github.io/formr/articles/manage-your-files.md):
 
-### Data Analysis
+- [Manage your
+  Projects](http://rubenarslan.github.io/formr/articles/manage-your-projects.md):
 
-Fetching, merging, and cleaning your data
+- [Manage your
+  Runs](http://rubenarslan.github.io/formr/articles/manage-your-runs.md):
 
-- [Fetch & Process
-  Results](http://rubenarslan.github.io/formr/articles/fetch-and-process-results.md):
+- [Manage your
+  Sessions](http://rubenarslan.github.io/formr/articles/manage-your-sessions.md):
+
+- [Manage your
+  Surveys](http://rubenarslan.github.io/formr/articles/manage-your-surveys.md):

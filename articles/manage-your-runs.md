@@ -2,12 +2,14 @@
 
 ``` r
 library(formr)
+# Automatically finds your stored keys
+formr_api_authenticate(host = "https://api.formr.org") # or your custom URL!
 ```
 
-While the `formr_push_project` and `formr_pull_project` functions are
-excellent for managing file-based assets (surveys, CSS, images),
-sometimes you need direct control over the run’s configuration on the
-server.
+While the `formr_api_push_project` and `formr_api_pull_project`
+functions are excellent for managing file-based assets (surveys, CSS,
+images), sometimes you need direct control over the run’s configuration
+on the server.
 
 The `formr` package provides a suite of lower-level functions to create,
 configure, inspect, and delete runs programmatically.
@@ -15,13 +17,13 @@ configure, inspect, and delete runs programmatically.
 ## Listing Your Runs
 
 To see an overview of all studies you have access to, use
-[`formr_runs()`](http://rubenarslan.github.io/formr/reference/formr_runs.md).
+[`formr_api_runs()`](http://rubenarslan.github.io/formr/reference/formr_api_runs.md).
 This returns a tidy data frame containing the run ID, name, and status
 flags (whether it is public, locked, or has active cron jobs).
 
 ``` r
 # List all runs and their status
-runs <- formr_runs()
+runs <- formr_api_runs()
 
 # Quickly check which runs are currently active/public
 subset(runs, public == TRUE)
@@ -34,7 +36,7 @@ are setting up a battery of studies programmatically.
 
 ``` r
 # Create a new run named "pilot-study-v1"
-formr_create_run("pilot-study-v1")
+formr_api_create_run("pilot-study-v1")
 ```
 
 The function returns the public link to your new run upon success.
@@ -46,7 +48,7 @@ locking it to prevent accidental edits during data collection or making
 it public for participants.
 
 The
-[`formr_run_settings()`](http://rubenarslan.github.io/formr/reference/formr_run_settings.md)
+[`formr_api_run_settings()`](http://rubenarslan.github.io/formr/reference/formr_api_run_settings.md)
 function handles this.
 
 - **GET:** If you provide only the run name, it returns the current
@@ -56,10 +58,10 @@ function handles this.
 
 ``` r
 # 1. View current settings
-settings <- formr_run_settings("pilot-study-v1")
+settings <- formr_api_run_settings("pilot-study-v1")
 
 # 2. Update settings: Lock the run and make it public
-formr_run_settings("pilot-study-v1", settings = list(
+formr_api_run_settings("pilot-study-v1", settings = list(
   locked = TRUE,     # Prevent structure changes
   public = 2,      # Allow participants to access via Link
   expiresOn = "2026-12-31" 
@@ -81,11 +83,11 @@ file to create a 1:1 backup of the runs configuration.
 
 ``` r
 # Inspect structure in R
-struct <- formr_run_structure("pilot-study-v1")
+struct <- formr_api_run_structure("pilot-study-v1")
 print(struct)
 
 # Save to file (Backup)
-formr_run_structure("pilot-study-v1", file = "pilot_v1_structure.json")
+formr_api_run_structure("pilot-study-v1", file = "pilot_v1_structure.json")
 ```
 
 ### Importing Structure
@@ -97,7 +99,7 @@ also create the necessary surveys for the run.
 
 ``` r
 # Overwrite the run's structure with a local JSON file
-formr_run_structure("pilot-study-v1", structure_json_path = "pilot_v1_structure.json")
+formr_api_run_structure("pilot-study-v1", structure_json_path = "pilot_v1_structure.json")
 ```
 
 ## Deleting a Run
@@ -111,8 +113,8 @@ However, the surveys used in the run will be kept.
 
 ``` r
 # Delete a run (prompts for confirmation by default)
-formr_delete_run("pilot-study-v1")
+formr_api_delete_run("pilot-study-v1")
 
 # Force delete without confirmation (for automated scripts)
-formr_delete_run("pilot-study-v1", prompt = FALSE)
+formr_api_delete_run("pilot-study-v1", prompt = FALSE)
 ```
