@@ -1,10 +1,8 @@
 # Reverse labelled values
 
-Reverses the underlying values for a numeric
+Taken from codebook package reverse the underlying values for a numeric
 [`haven::labelled()`](https://haven.tidyverse.org/reference/labelled.html)
-vector while preserving and updating the value labels correctly. Useful
-for reversing Likert scales (e.g., 1=Strongly Disagree -\> 5=Strongly
-Agree).
+vector while keeping the labels correct
 
 ## Usage
 
@@ -16,13 +14,12 @@ reverse_labelled_values(x)
 
 - x:
 
-  A numeric vector, potentially with
-  [`haven::labelled`](https://haven.tidyverse.org/reference/labelled.html)
-  attributes.
+  a labelled vector
 
 ## Value
 
-A vector of the same class with values reversed.
+return the labelled vector with the underlying values having been
+reversed
 
 ## Examples
 
@@ -37,11 +34,11 @@ x
 #>      1   Bad
 #>      5  Good
 reverse_labelled_values(x)
-#> <labelled<double>[9]>
+#> <labelled<integer>[9]>
 #> [1] 5 5 5 4 4 4 3 3 3
 #> 
 #> Labels:
 #>  value label
-#>      1  Good
 #>      5   Bad
+#>      1  Good
 ```

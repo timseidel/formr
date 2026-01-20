@@ -20,5 +20,5 @@ next_day(date = NULL)
 
 ``` r
 next_day(Sys.time())
-#> [1] "2026-01-13 UTC"
+#> [1] "2026-01-21 UTC"
 ```

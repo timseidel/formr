@@ -1,34 +1,31 @@
-# Get or Update Run Structure (Run Units)
+# Download run structure from formr
 
-Export the current run structure as a list (GET) or replace it by
-importing a JSON file (PUT).
+After connecting to formr using
+[`formr_connect()`](http://rubenarslan.github.io/formr/reference/formr_connect.md)
+you can download the study/run structure using this command.
 
 ## Usage
 
 ``` r
-formr_run_structure(run_name, structure_json_path = NULL, file = NULL)
+formr_run_structure(run_name, host = formr_last_host())
 ```
 
 ## Arguments
 
 - run_name:
 
-  Name of the run.
+  case-sensitive name of a run your account owns
 
-- structure_json_path:
+- host:
 
-  Optional path to a JSON file to IMPORT (PUT) structure. If provided,
-  the function uploads this file to the server.
+  defaults to
+  [`formr_last_host()`](http://rubenarslan.github.io/formr/reference/formr_last_host.md),
+  which defaults to https://formr.org
 
-- file:
+## Examples
 
-  Optional path to save the DOWNLOADED (GET) structure as a .json file.
-  This ensures a perfect 1:1 backup of the server configuration.
-
-## Value
-
-- GET (default): A `formr_run_structure` object (list) for inspection.
-
-- GET (file provided): Invisibly returns the file path.
-
-- PUT: Invisibly returns TRUE on success.
+``` r
+if (FALSE) { # \dontrun{
+formr_run_structure(run_name = 'training_diary' )
+} # }
+```

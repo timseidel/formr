@@ -1,24 +1,22 @@
 # Rescue lost attributes
 
-Copies attributes (labels, SPSS formats) from one data frame to another.
-Useful after `dplyr` operations that strip attributes.
+Taken from codebook You can use this function if some of your items have
+lost their attributes during wrangling Variables have to have the same
+name (Duh) and no attributes should be overwritten. But use with care.
+Similar to `labelled::copy_labels()`.
 
 ## Usage
 
 ``` r
-rescue_attributes(df_target, df_source)
+rescue_attributes(df_no_attributes, df_with_attributes)
 ```
 
 ## Arguments
 
-- df_target:
+- df_no_attributes:
 
-  The data frame missing attributes.
+  the data frame with missing attributes
 
-- df_source:
+- df_with_attributes:
 
-  The reference data frame containing attributes.
-
-## Value
-
-`df_target` with restored attributes.
+  the data frame from which you want to restore attributes

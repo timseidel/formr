@@ -1,34 +1,32 @@
-# Store API Credentials in Keyring
+# Store keys in keyring
 
-Securely stores your formr credentials in the system keyring. You can
-store either OAuth credentials (client_id/secret) OR a direct access
-token.
+Store keys in the system keyring/keychain instead of plaintext.
 
 ## Usage
 
 ``` r
-formr_store_keys(
-  host = "https://formr.org",
-  client_id = NULL,
-  client_secret = NULL,
-  access_token = NULL
-)
+formr_store_keys(account_name, email = NULL, secret_2fa = NULL)
 ```
 
 ## Arguments
 
-- host:
+- account_name:
 
-  The API URL (e.g. https://formr.org or http://localhost)
+  a shorthand for the account you're using
 
-- client_id:
+- email:
 
-  OAuth Client ID
+  email address for the account, will be prompted if omitted
 
-- client_secret:
+- secret_2fa:
 
-  OAuth Client Secret
+  a 2FA secret, optional, set to NULL if you want to be prompted for it
+  when logging in, set to "" if you don't have 2FA
 
-- access_token:
+## Examples
 
-  Direct Personal Access Token (alternative to OAuth)
+``` r
+if (FALSE) { # \dontrun{
+formr_store_keys("formr_diary_study_account")
+} # }
+```

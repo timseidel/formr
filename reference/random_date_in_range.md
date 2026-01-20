@@ -1,23 +1,24 @@
 # Random date in range
 
-Helper to generate random timestamps for simulation.
+taken from Dirk Eddelbuettel's answer here
+http://stackoverflow.com/a/14721124/263054
 
 ## Usage
 
 ``` r
-random_date_in_range(N, lower = "2020-01-01", upper = "2025-12-31")
+random_date_in_range(N, lower = "2012/01/01", upper = "2012/12/31")
 ```
 
 ## Arguments
 
 - N:
 
-  Number of dates to generate.
+  desired number of random dates
 
 - lower:
 
-  Start date (YYYY-MM-DD).
+  lower limit
 
 - upper:
 
-  End date (YYYY-MM-DD).
+  upper limit
