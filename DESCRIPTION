@@ -48,6 +48,7 @@ Roxygen: list(markdown = TRUE)
 Encoding: UTF-8
 Suggests: 
     testthat (>= 3.0.0),
-    vcr
+    vcr,
+    mockery
 Config/testthat/edition: 3
 URL: http://rubenarslan.github.io/formr/

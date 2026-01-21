@@ -94,3 +94,19 @@ test_that("formr_store_keys (Legacy Mode) stores credentials correctly", {
 	expect_equal(stored_pass, test_pass)
 	expect_equal(stored_2fa, test_2fa)
 })
+
+test_that("formr_store_keys throws informative error if keyring is missing", {
+	# This test requires the 'mockery' package to stub the environment
+	skip_if_not_installed("mockery")
+	
+	# 1. Setup the stub
+	# We tell R: "When 'formr_store_keys' calls 'requireNamespace', 
+	# make it return FALSE instead of actually checking the package."
+	mockery::stub(formr_store_keys, "requireNamespace", FALSE)
+	
+	# 2. Expect the specific error message
+	expect_error(
+		formr_store_keys(account_name = "dummy_account"),
+		"Package 'keyring' is required"
+	)
+})

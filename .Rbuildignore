@@ -18,3 +18,4 @@ node_modules
 repomix.config.json
 .repomixignore
 formr_codebase.xml
+coverage.xml

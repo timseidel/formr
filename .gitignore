@@ -12,3 +12,4 @@ repomix.config.json
 .repomixignore
 formr_codebase.xml
 .Renviron
+coverage.xml
