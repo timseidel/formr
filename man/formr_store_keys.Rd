@@ -7,6 +7,7 @@
 formr_store_keys(
   account_name = NULL,
   email = NULL,
+  password = NULL,
   secret_2fa = NULL,
   host = "https://formr.org",
   client_id = NULL,
@@ -18,6 +19,8 @@ formr_store_keys(
 \item{account_name}{(Legacy) A shorthand name for the account. If provided, Legacy mode is triggered.}
 
 \item{email}{(Legacy) Email address for the account. Will be prompted if omitted.}
+
+\item{password}{(Legacy) Optional. Provide to skip interactive prompt (useful for scripts/tests).}
 
 \item{secret_2fa}{(Legacy) A 2FA secret. Set to NULL to be prompted, or "" if not used.}
 

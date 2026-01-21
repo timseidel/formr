@@ -7,6 +7,7 @@
 #'
 #' @param account_name (Legacy) A shorthand name for the account. If provided, Legacy mode is triggered.
 #' @param email (Legacy) Email address for the account. Will be prompted if omitted.
+#' @param password (Legacy) Optional. Provide to skip interactive prompt (useful for scripts/tests).
 #' @param secret_2fa (Legacy) A 2FA secret. Set to NULL to be prompted, or "" if not used.
 #' @param host (API) The API URL (e.g., https://formr.org). Defaults to formr.org.
 #' @param client_id (API) OAuth Client ID.
@@ -31,6 +32,7 @@
 #' }
 formr_store_keys <- function(account_name = NULL,
 														 email = NULL,
+														 password = NULL,
 														 secret_2fa = NULL,
 														 host = "https://formr.org",
 														 client_id = NULL,
@@ -49,20 +51,30 @@ formr_store_keys <- function(account_name = NULL,
 			email <- readline("Enter your email: ")
 		}
 		
-		# Store main password (interactive prompt via keyring)
-		keyring::key_set(service = account_name, username = email)
+		# Store main password
+		if (!is.null(password)) {
+			# Non-interactive mode (for tests/scripts)
+			keyring::key_set_with_value(
+				service = account_name, 
+				username = email, 
+				password = password
+			)
+		} else {
+			# Interactive mode
+			keyring::key_set(service = account_name, username = email)
+		}
 		
 		# Store 2FA Secret
 		if (!is.null(secret_2fa)) {
 			keyring::key_set_with_value(
 				service = account_name, 
-				username = paste(email, "2FA"),
+				username = paste(email, "2FA"), 
 				password = secret_2fa
 			)
 		} else {
 			# Interactive prompt for 2FA
 			keyring::key_set(
-				service = account_name,
+				service = account_name, 
 				username = paste(email, "2FA"),
 				prompt = "2FA secret if applicable"
 			)
