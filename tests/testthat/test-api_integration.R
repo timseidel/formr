@@ -164,6 +164,59 @@ test_that("formr_api_runs deletes a run successfully", {
 	})
 })
 
+test_that("formr_api_logout handles invalid and valid sessions correctly", {
+	
+	# --- Scenario 1: Logout when already logged out ---
+	# Ensure we start with a clean slate
+	if (exists("session", envir = formr:::.formr_state)) {
+		rm("session", envir = formr:::.formr_state)
+	}
+	
+	# Expect a specific message and FALSE return
+	expect_message(
+		res <- formr_api_logout(), 
+		"No active session found"
+	)
+	expect_false(res)
+	
+	
+	# --- Scenario 2: Full Logout Flow (Auth -> Logout -> Verify) ---
+	vcr::use_cassette("formr_api_logout_flow", {
+		
+		# 1. Setup: Authenticate to get a valid session
+		# We use the existing auth function to populate .formr_state$session
+		formr_api_authenticate(
+			host = Sys.getenv("FORMR_HOST"), 
+			client_id = Sys.getenv("FORMR_CLIENT_ID"),
+			client_secret = Sys.getenv("FORMR_CLIENT_SECRET")
+		)
+		
+		# Verify we actually have a session to kill
+		session_initial <- formr_api_session()
+		expect_false(is.null(session_initial))
+		expect_type(session_initial$token, "character")
+		
+		# 2. Action: Call Logout
+		# We expect two messages: one for server revocation, one for local clearing.
+		# wrapping in capture_messages to verify both.
+		msgs <- capture_messages(res <- formr_api_logout())
+		
+		# 3. Assertions
+		
+		# Check messages (Flexible matching in case order/wording tweaks vary slightly)
+		expect_true(any(grepl("Token revoked on server", msgs)))
+		expect_true(any(grepl("Local session cleared", msgs)))
+		
+		# Check return value
+		expect_true(res)
+		
+		# 4. Verification: Check Local State
+		# formr_api_session() should now return NULL
+		expect_null(formr_api_session())
+		
+	}, match_requests_on = c("method", "uri", "body"))
+})
+
 test_that("Logic Unit Test: Reversal, Types, and Scales work with hardcoded data", {
 	
 	# 1. HARDCODE METADATA (What the API structure endpoint would return)
