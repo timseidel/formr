@@ -47,7 +47,7 @@ It is helpful to know which one to use:
 | **Authentication** | OAuth / Access Tokens | Email & Password |
 | **Primary Use** | Project Management, Live Logic within your Run, Modern Data Fetching | Legacy Data Fetching |
 
-**Recommendation:** Use the **New API (`formr_api_*`)** for all new projects.
+**Recommendation:** Use the **API (`formr_api_*`)** for all new projects.
 
 ---
 
