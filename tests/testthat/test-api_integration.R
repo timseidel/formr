@@ -1,6 +1,7 @@
 library(testthat)
 library(vcr)
 library(formr)
+library(mockery)
 
 test_that("formr_api_authenticate works (live/recorded)", {
 	
@@ -154,6 +155,28 @@ test_that("formr_api_survey_structure returns valid item metadata", {
 		if ("choices" %in% names(items)) {
 			expect_type(items$choices, "list")
 		}
+	})
+})
+
+test_that("get_api_project_state respects .formrignore", {
+	withr::with_tempdir({
+		dir.create("backup")
+		dir.create("surveys")
+		writeLines("ignored", "backup/secret.rds")
+		writeLines("ignored", ".DS_Store")
+		writeLines("tracked", "surveys/my_survey.xlsx")
+		
+		# Create .formrignore
+		writeLines(c("backup/", ".DS_Store"), ".formrignore")
+		
+		# We need to access the internal function. 
+		# Use formr::: if it's not exported, or test via public API behavior.
+		state <- formr:::get_api_project_state(".")
+		
+		files <- names(state)
+		expect_true("surveys/my_survey.xlsx" %in% files)
+		expect_false("backup/secret.rds" %in% files)
+		expect_false(".DS_Store" %in% files)
 	})
 })
 

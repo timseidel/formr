@@ -5,7 +5,7 @@ http_interactions:
   response:
     status: 200
     headers:
-      date: Tue, 20 Jan 2026 20:19:28 GMT
+      date: Wed, 21 Jan 2026 11:06:51 GMT
       server: Apache/2.4.65 (Debian)
       x-powered-by: PHP/8.2.2
       expires: Thu, 19 Nov 1981 08:52:00 GMT
@@ -34,5 +34,5 @@ http_interactions:
         12:30:40","modified":"2025-12-23 12:30:40"},{"id":205,"name":"api-test","title":"Comprehensive
         Study Title Update","public":2,"cron_active":1,"locked":0,"created":"2026-01-20
         20:09:35","modified":"2026-01-20 20:09:49"}]'
-  recorded_at: 2026-01-20 20:19:28
+  recorded_at: 2026-01-21 11:06:51
 recorded_with: VCR-vcr/2.1.0

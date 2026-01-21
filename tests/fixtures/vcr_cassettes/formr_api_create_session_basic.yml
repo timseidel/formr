@@ -7,7 +7,7 @@ http_interactions:
   response:
     status: 201
     headers:
-      date: Tue, 20 Jan 2026 20:19:28 GMT
+      date: Wed, 21 Jan 2026 11:06:51 GMT
       server: Apache/2.4.65 (Debian)
       x-powered-by: PHP/8.2.2
       expires: Thu, 19 Nov 1981 08:52:00 GMT
@@ -20,6 +20,6 @@ http_interactions:
       connection: close
       content-type: application/json
     body:
-      string: '{"count_created":1,"sessions":["McEMO_WUbm0zPFUCtJ0Et4x9J0d_V4W2mPbDlnM18xpHdprhOu_3BBwJowA4nxDO"]}'
-  recorded_at: 2026-01-20 20:19:29
+      string: '{"count_created":1,"sessions":["oZqPaYHM44bBBfbC7jRFNv_UU-a03PglKIiB4P20BtxM71K5KSIP3K9rlVUJE2wQ"]}'
+  recorded_at: 2026-01-21 11:06:51
 recorded_with: VCR-vcr/2.1.0

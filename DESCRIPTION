@@ -49,6 +49,8 @@ Encoding: UTF-8
 Suggests: 
     testthat (>= 3.0.0),
     vcr,
-    mockery
+    mockery,
+    withr
+VignetteBuilder: knitr
 Config/testthat/edition: 3
 URL: http://rubenarslan.github.io/formr/
