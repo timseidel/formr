@@ -15,6 +15,7 @@ supports two modes:
 formr_store_keys(
   account_name = NULL,
   email = NULL,
+  password = NULL,
   secret_2fa = NULL,
   host = "https://formr.org",
   client_id = NULL,
@@ -33,6 +34,11 @@ formr_store_keys(
 - email:
 
   (Legacy) Email address for the account. Will be prompted if omitted.
+
+- password:
+
+  (Legacy) Optional. Provide to skip interactive prompt (useful for
+  scripts/tests).
 
 - secret_2fa:
 
