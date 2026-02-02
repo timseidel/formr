@@ -283,9 +283,11 @@ formr_api_recognise <- function(item_list, results) {
 				}
 				
 				if(!is.numeric(val)) results[[name]] <- suppressWarnings(as.numeric(val))
-				try({
+				tryCatch({
 					results[[name]] <- haven::labelled(results[[name]], stats::setNames(vals, labs))
-				}, silent = TRUE)
+				}, error = function(e) {
+					warning(sprintf("Failed to apply labels to '%s': %s", name, e$message))
+				})
 			}
 		} 
 		# Handle Explicit Types
@@ -301,9 +303,8 @@ formr_api_recognise <- function(item_list, results) {
 #' Reverse Items and Update Labels
 #' 
 #' Reverses numeric items ending in 'R' based on metadata bounds.
-#' Critically, it also updates `haven::labelled` attributes so that 
-#' the text labels point to the new, reversed values.
-#' 
+#' Safely handles cases where choices or labels were accidentally stored as strings.
+#'
 #' @param results A data frame containing the results.
 #' @param item_list A data frame containing item metadata.
 #' @export
@@ -315,73 +316,110 @@ formr_api_reverse <- function(results, item_list) {
 	reversed_vars <- item_names[stringr::str_detect(item_names, "(?i)[a-z0-9_]+?[0-9]+R$")]
 	
 	for (var in reversed_vars) {
-		# Only process numeric columns (or labelled ones)
 		val_vec <- results[[var]]
-		if(!is.numeric(val_vec) && !inherits(val_vec, "haven_labelled")) next
 		
-		# --- 1. Determine Bounds from Metadata ---
+		# 1. Fetch Metadata
 		meta <- item_list[item_list$name == var, ]
 		if(nrow(meta) == 0) next
 		
 		choices <- if(is.list(meta$choices)) meta$choices[[1]] else meta$choices
 		if(is.null(choices)) next 
 		
+		# 2. Determine Bounds (Min/Max)
+		# Try to parse choices as numbers. 
+		# If choices are c("A", "B"), as.numeric produces warnings + NAs.
 		meta_vals <- suppressWarnings(as.numeric(unlist(choices)))
 		
-		# If content is text (e.g. "1"="Dis"), try the names instead
+		# Fallback: Sometimes values are keys, sometimes they are the vector content
 		if(all(is.na(meta_vals)) && !is.null(names(choices))) {
 			meta_vals <- suppressWarnings(as.numeric(names(choices)))
 		}
 		
-		if(all(is.na(meta_vals))) next 
+		# 2b. ABORT if metadata is strictly non-numeric (e.g. "Strongly Agree", "Agree")
+		if(all(is.na(meta_vals))) {
+			warning(sprintf("Skipped reversal for '%s': Choices are non-numeric strings.", var))
+			next 
+		}
 		
 		max_val <- max(meta_vals, na.rm = TRUE)
 		min_val <- min(meta_vals, na.rm = TRUE)
 		reversal_const <- max_val + min_val
 		
-		# --- 2. Perform Numeric Reversal ---
-		# Formula: (Max + Min) - Value
-		# Note: This operation strips attributes, so we store it in a temp var
-		reversed_numeric <- reversal_const - as.numeric(val_vec)
+		# 3. Prepare Data (Safe Conversion)
+		# We must strip attributes first to check the raw data vector
+		raw_data <- as.vector(val_vec) 
 		
-		# --- 3. Handle Label Attributes ---
+		if (is.character(raw_data)) {
+			# Try to coerce string numbers ("1", "2") to numeric
+			converted_data <- suppressWarnings(as.numeric(raw_data))
+			
+			# Check if we lost data (e.g. "3" -> 3 is ok, but "High" -> NA is bad)
+			was_na_before <- is.na(raw_data)
+			is_na_now     <- is.na(converted_data)
+			
+			if (sum(is_na_now) > sum(was_na_before)) {
+				warning(sprintf("Skipped reversal for '%s': Data contains non-numeric strings.", var))
+				next
+			}
+			raw_data <- converted_data
+		}
+		
+		# 4. Perform Numeric Reversal
+		# Formula: (Max + Min) - Value
+		reversed_numeric <- reversal_const - raw_data
+		
+		# 5. Handle Attributes (haven_labelled)
 		if (inherits(val_vec, "haven_labelled")) {
-			# Extract existing definitions (e.g. 1="Low", 5="High")
 			old_labels <- attr(val_vec, "labels")
 			
 			if (!is.null(old_labels)) {
-				# Reverse the definition values
-				# "Low" was 1, becomes (6-1) = 5
-				# "High" was 5, becomes (6-5) = 1
-				new_labels <- reversal_const - old_labels
+				# 5a. Ensure labels are numeric before math
+				old_label_values <- unname(old_labels) # The values, e.g. 1, 2, 3
 				
-				# Reconstruct the labelled object 
-				# We sort the labels so they appear neatly in viewers (1..5)
-				results[[var]] <- haven::labelled(
-					reversed_numeric, 
-					labels = sort(new_labels)
-				)
+				# If labels are stored as strings "1", "2", convert them
+				if (is.character(old_label_values)) {
+					old_label_values <- suppressWarnings(as.numeric(old_label_values))
+				}
 				
-				# Restore the Variable Label (Question Text) if it existed
-				if (!is.null(attr(val_vec, "label"))) {
-					attr(results[[var]], "label") <- attr(val_vec, "label")
+				# If labels are non-numeric ("A", "B"), we cannot reverse the label definition.
+				# We apply the numeric reversal to the data, but we must DROP the labels 
+				# to avoid mismatch, or warn.
+				if (any(is.na(old_label_values))) {
+					warning(sprintf("Reversed data for '%s', but dropped labels: Label values were non-numeric.", var))
+					results[[var]] <- reversed_numeric
+				} else {
+					# Safe to reverse labels
+					new_values <- reversal_const - old_label_values
+					
+					# Reconstruct valid haven object
+					new_labels_vec <- stats::setNames(new_values, names(old_labels))
+					
+					results[[var]] <- haven::labelled(
+						reversed_numeric, 
+						labels = sort(new_labels_vec)
+					)
 				}
 			} else {
-				# Was labelled class but had no labels? Just assign numeric
 				results[[var]] <- reversed_numeric
 			}
+			
+			# Keep variable label (the question text)
+			if (!is.null(attr(val_vec, "label"))) {
+				attr(results[[var]], "label") <- attr(val_vec, "label")
+			}
+			
 		} else {
-			# Plain numeric variable
+			# Standard Numeric Case
 			results[[var]] <- reversed_numeric
-			# Preserve variable label if it exists
+			# Preserve label if exists
 			if (!is.null(attr(val_vec, "label"))) {
 				attr(results[[var]], "label") <- attr(val_vec, "label")
 			}
 		}
 		
-		# Mark as reversed for transparency
 		attr(results[[var]], "reversed") <- TRUE
 	}
+	
 	results
 }
 
