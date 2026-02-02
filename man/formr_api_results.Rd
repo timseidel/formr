@@ -9,7 +9,8 @@ formr_api_results(
   ...,
   compute_scales = TRUE,
   join = TRUE,
-  remove_test_sessions = TRUE
+  remove_test_sessions = TRUE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -22,9 +23,11 @@ formr_api_results(
 \item{join}{Logical. If TRUE (default), joins all surveys into one wide dataframe.}
 
 \item{remove_test_sessions}{Logical. Filter out sessions marked as testing?}
+
+\item{verbose}{Logical. Print progress messages?}
 }
 \value{
-A processed tibble (if joined) or a list of processed tibbles.
+A processed tibble with class \code{formr_results}.
 }
 \description{
 This is the main function for scientists. It fetches data from the API,

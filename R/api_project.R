@@ -87,61 +87,92 @@ formr_api_pull_project <- function(run_name, dir = ".", prompt = TRUE) {
 #'
 #' @param run_name Name of the run.
 #' @param dir Local directory (default ".").
-#' @param watch Logical. If TRUE, keeps the process running to monitor and push changes (default FALSE).
-#' @param interval Seconds between checks in watch mode (default 2).
+#' @param watch Logical. If TRUE, keeps the connection open and uploads changes immediately when files are saved.
+#' @param background Logical. If TRUE (default), launches watcher as an RStudio Job.
+#' @param interval Seconds between checks (default 2).
 #' @export
-formr_api_push_project <- function(run_name, dir = ".", watch = FALSE, interval = 2) {
+formr_api_push_project <- function(run_name, dir = ".", watch = FALSE, background = TRUE, interval = 2) {
 	if (!dir.exists(dir)) stop("Directory not found. Run formr_api_pull_project() first.")
 	
+	# 1. Initial Push (Sync current state immediately)
+	# We do this in the main thread so the user sees immediate success/failure
 	message(sprintf("[INFO] Pushing '%s' -> Run '%s'", normalizePath(dir), run_name))
-	
-	# 1. Initial Push (Sync current state)
 	current_state <- get_api_project_state(dir)
+	initial_changes <- list(added = names(current_state), modified = character(0), deleted = character(0))
 	
-	# Treat all current files as 'added' (or modified) to force an upload
-	initial_changes <- list(
-		added = names(current_state),
-		modified = character(0),
-		deleted = character(0)
-	)
-	
-	# Only push if there are files
 	if (length(initial_changes$added) > 0) {
-		message("   (Uploading current project state...)")
 		handle_api_project_changes(run_name, dir, initial_changes)
-		message("[SUCCESS] Push complete.")
 	} else {
-		message("[INFO] Directory is empty (or everything is ignored). Nothing to push.")
+		message("[INFO] No initial changes to push.")
 	}
 	
-	# 2. Watcher Mode
+	# 2. Watcher Logic
 	if (watch) {
-		message("\n[INFO] Watcher mode active. Monitoring for changes...")
-		message("   (Press Esc to stop)")
+		# Check if we should launch a Background Job
+		if (background && requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
+			
+			# Capture current authentication to pass to the background job
+			session <- formr_api_session()
+			auth_cmd <- ""
+			if (!is.null(session) && !is.null(session$token)) {
+				# Reconstruct host URL from parsed list
+				host_url <- httr::build_url(session$base_url)
+				auth_cmd <- sprintf('formr::formr_api_authenticate(host = "%s", access_token = "%s")', 
+														host_url, session$token)
+			}
+			
+			# Create a self-contained script for the job
+			job_script <- tempfile(pattern = "formr_watch_", fileext = ".R")
+			script_content <- c(
+				"library(formr)",
+				auth_cmd, # Inject authentication
+				sprintf("setwd('%s')", getwd()), # Ensure job runs in correct WD
+				sprintf("message('Starting Watcher for run: %s')", run_name),
+				# Call recursively with background=FALSE to enter the actual loop
+				sprintf("formr::formr_api_push_project(run_name = '%s', dir = '%s', watch = TRUE, background = FALSE, interval = %d)", 
+								run_name, dir, interval)
+			)
+			writeLines(script_content, job_script)
+			
+			# Launch the job
+			rstudioapi::jobRunScript(
+				path = job_script,
+				name = paste0("Sync: ", run_name),
+				workingDir = getwd(),
+				importEnv = FALSE 
+			)
+			
+			message("[SUCCESS] Watcher started in the 'Jobs' tab.")
+			return(invisible(TRUE))
+		}
+		
+		# --- Blocking Loop (Runs if background=FALSE or not in RStudio) ---
+		message(sprintf("\n[INFO] Watching '%s' for changes (Press Esc to stop)...", dir))
 		
 		last_state <- current_state
 		
-		tryCatch(
-			{
-				while (TRUE) {
-					Sys.sleep(interval)
+		tryCatch({
+			while (TRUE) {
+				Sys.sleep(interval)
+				
+				# Detect changes
+				new_state <- get_api_project_state(dir)
+				changes <- detect_api_changes(last_state, new_state)
+				
+				if (length(changes$added) > 0 || length(changes$modified) > 0 || length(changes$deleted) > 0) {
+					# Print timestamp for log clarity
+					message(sprintf("\n[%s] Change detected...", format(Sys.time(), "%H:%M:%S")))
 					
-					current_state <- get_api_project_state(dir)
-					changes <- detect_api_changes(last_state, current_state)
+					# Handle Sync
+					handle_api_project_changes(run_name, dir, changes)
 					
-					if (length(changes$added) > 0 || length(changes$modified) > 0 || length(changes$deleted) > 0) {
-						# Sync Logic
-						handle_api_project_changes(run_name, dir, changes)
-						
-						# Update State
-						last_state <- current_state
-					}
+					# Update State
+					last_state <- new_state
 				}
-			},
-			interrupt = function(i) {
-				message("\n[INFO] Watcher stopped.")
 			}
-		)
+		}, interrupt = function(i) {
+			message("\n[INFO] Watcher stopped.")
+		})
 	}
 }
 
@@ -321,33 +352,44 @@ sync_run_settings <- function(run_name, dir) {
 	settings_path <- file.path(dir, "run_settings.json")
 	if (!file.exists(settings_path)) return()
 	
+	# Use jsonlite to read
 	settings <- jsonlite::read_json(settings_path)
 	
-	# Fix Types (PHP boolean issue)
-	settings <- lapply(settings, function(x) if (is.logical(x)) as.integer(x) else x)
+	# 1. Smart Asset Sync (Bi-directional)
+	# If css/custom.css exists, read it. 
+	# If css/ folder exists BUT file is gone, assume user deleted it -> clear settings.
 	
-	# Inject CSS
-	css_file <- file.path(dir, "css", "custom.css")
-	if (file.exists(css_file)) {
-		# Check for "Magic" behavior: Are we overwriting existing JSON settings?
-		if (!is.null(settings$custom_css) && nzchar(settings$custom_css)) {
-			message("[INFO]  Overriding 'custom_css' in settings with content from css/custom.css")
+	if (dir.exists(file.path(dir, "css"))) {
+		css_file <- file.path(dir, "css", "custom.css")
+		if (file.exists(css_file)) {
+			settings$custom_css <- paste(readLines(css_file, warn=FALSE), collapse="\n")
+		} else {
+			settings$custom_css <- "" # Explicitly clear if file was deleted
 		}
-		settings$custom_css <- paste(readLines(css_file, warn=FALSE), collapse="\n")
 	}
 	
-	# Inject JS
-	js_file <- file.path(dir, "js", "custom.js")
-	if (file.exists(js_file)) {
-		# Check for "Magic" behavior: Are we overwriting existing JSON settings?
-		if (!is.null(settings$custom_js) && nzchar(settings$custom_js)) {
-			message("[INFO]  Overriding 'custom_js' in settings with content from js/custom.js")
+	if (dir.exists(file.path(dir, "js"))) {
+		js_file <- file.path(dir, "js", "custom.js")
+		if (file.exists(js_file)) {
+			settings$custom_js <- paste(readLines(js_file, warn=FALSE), collapse="\n")
+		} else {
+			settings$custom_js <- ""
 		}
-		settings$custom_js <- paste(readLines(js_file, warn=FALSE), collapse="\n")
 	}
 	
+	# 2. Recursive NULL Fix (Replaces the fragile Regex)
+	# API requires explicit nulls, not empty lists list()
+	fix_empty_lists <- function(x) {
+		if (is.list(x) && length(x) == 0) return(NULL)
+		if (is.list(x)) return(lapply(x, fix_empty_lists))
+		return(x)
+	}
+	settings <- fix_empty_lists(settings)
+	
+	# 3. Upload
 	tryCatch({
 		formr_api_run_settings(run_name, settings)
+		message("   [SETTINGS] Synced successfully.")
 	}, error = function(e) warning("Failed to sync settings: ", e$message))
 }
 

@@ -4,16 +4,24 @@
 \alias{formr_api_push_project}
 \title{Push Project to Server}
 \usage{
-formr_api_push_project(run_name, dir = ".", watch = FALSE, interval = 2)
+formr_api_push_project(
+  run_name,
+  dir = ".",
+  watch = FALSE,
+  background = TRUE,
+  interval = 2
+)
 }
 \arguments{
 \item{run_name}{Name of the run.}
 
 \item{dir}{Local directory (default ".").}
 
-\item{watch}{Logical. If TRUE, keeps the process running to monitor and push changes (default FALSE).}
+\item{watch}{Logical. If TRUE, keeps the connection open and uploads changes immediately when files are saved.}
 
-\item{interval}{Seconds between checks in watch mode (default 2).}
+\item{background}{Logical. If TRUE (default), launches watcher as an RStudio Job.}
+
+\item{interval}{Seconds between checks (default 2).}
 }
 \description{
 Uploads local project files (surveys, assets, settings) to the formr server.
