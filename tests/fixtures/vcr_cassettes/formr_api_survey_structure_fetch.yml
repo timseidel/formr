@@ -5,7 +5,7 @@ http_interactions:
   response:
     status: 200
     headers:
-      date: Wed, 21 Jan 2026 11:06:52 GMT
+      date: Mon, 02 Feb 2026 18:05:26 GMT
       server: Apache/2.4.65 (Debian)
       x-powered-by: PHP/8.2.2
       expires: Thu, 19 Nov 1981 08:52:00 GMT
@@ -14,7 +14,7 @@ http_interactions:
       vary: Accept-Encoding
       content-encoding: gzip
       access-control-allow-origin: ocpu.rforms.org
-      content-length: '440'
+      content-length: '415'
       connection: close
       content-type: application/json
     body:
@@ -29,17 +29,16 @@ http_interactions:
         18:40:28","modified":"2025-12-14 18:40:28","results_table":"s975_Fragebogen_Fragen"},{"id":976,"name":"Fragebogen_mehr_Informationen","created":"2025-12-14
         18:40:28","modified":"2025-12-14 18:40:28","results_table":"s976_Fragebogen_mehr_Informationen"},{"id":1448,"name":null,"created":"2025-12-15
         23:21:20","modified":"2025-12-15 23:21:20","results_table":"s1448_"},{"id":1464,"name":"platzhalter__copy","created":"2025-12-17
-        13:46:55","modified":"2025-12-17 13:46:55","results_table":"s1464_platzhalter__copy"},{"id":2202,"name":"friend_list","created":"2026-01-20
-        20:09:49","modified":"2026-01-20 20:09:49","results_table":"s2202_friend_list"},{"id":2222,"name":"survey_1","created":"2026-01-21
+        13:46:55","modified":"2025-12-17 13:46:55","results_table":"s1464_platzhalter__copy"},{"id":2222,"name":"survey_1","created":"2026-01-21
         11:54:24","modified":"2026-01-21 12:04:16","results_table":"s2222_survey_1"}]'
-  recorded_at: 2026-01-21 11:06:52
+  recorded_at: 2026-02-02 18:05:26
 - request:
     method: GET
     uri: http://formr-host-redacted/v1/surveys/platzhalter
   response:
     status: 200
     headers:
-      date: Wed, 21 Jan 2026 11:06:52 GMT
+      date: Mon, 02 Feb 2026 18:05:26 GMT
       server: Apache/2.4.65 (Debian)
       x-powered-by: PHP/8.2.2
       expires: Thu, 19 Nov 1981 08:52:00 GMT
@@ -159,5 +158,5 @@ http_interactions:
                 "use_paging": 1
             }
         }
-  recorded_at: 2026-01-21 11:06:52
+  recorded_at: 2026-02-02 18:05:26
 recorded_with: VCR-vcr/2.1.0
