@@ -3,12 +3,69 @@
 .formr_state <- new.env(parent = emptyenv())
 
 #' Get Current API session
+#'
+#' Returns the current session object or NULL if not authenticated.
+#'
+#' @return A list with 'base_url' and 'token' elements, or NULL.
 #' @export
 formr_api_session <- function() {
 	if (exists("session", envir = .formr_state)) {
-		return(get("session", envir = .formr_state))
+		session <- get("session", envir = .formr_state)
+		if (.validate_session(session, silent = TRUE)) {
+			return(session)
+		} else {
+			return(NULL)
+		}
 	}
 	return(NULL)
+}
+
+#' Validate session object
+#'
+#' Internal function to validate session structure and expiry.
+#'
+#' @param session The session object to validate.
+#' @param silent If TRUE, returns FALSE on failure. If FALSE, throws error.
+#' @return TRUE if valid, FALSE or throws error if invalid.
+#' @noRd
+.validate_session <- function(session, silent = FALSE) {
+	if (!is.list(session)) {
+		if (silent) return(FALSE)
+		stop("Session corrupted: not a list")
+	}
+
+	if (is.null(session$token)) {
+		if (silent) return(FALSE)
+		stop("Session corrupted: missing token")
+	}
+
+	if (!is.character(session$token) || nchar(session$token) == 0) {
+		if (silent) return(FALSE)
+		stop("Session corrupted: invalid token")
+	}
+
+	if (is.null(session$base_url)) {
+		if (silent) return(FALSE)
+		stop("Session corrupted: missing base_url")
+	}
+
+	if (!is.list(session$base_url) || is.null(session$base_url$hostname)) {
+		if (silent) return(FALSE)
+		stop("Session corrupted: invalid base_url")
+	}
+
+	if (!is.null(session$expires_at)) {
+		if (!inherits(session$expires_at, "POSIXct")) {
+			if (silent) return(FALSE)
+			stop("Session corrupted: invalid expires_at")
+		}
+		if (session$expires_at <= Sys.time()) {
+			if (silent) return(FALSE)
+			stop("Session expired. Please run formr_api_authenticate() again.")
+		}
+	}
+
+	TRUE
 }
 
 #' Authenticate with formr
@@ -46,44 +103,60 @@ formr_api_authenticate <- function(host = "https://formr.org",
 	
 	# 2. Authenticate
 	if (!is.null(access_token)) {
-		# Direct Token
-		session_data <- list(base_url = httr::parse_url(host), token = access_token)
-		
-		# --- CHANGE: Save to environment ---
+		session_data <- list(
+			base_url = httr::parse_url(host),
+			token = access_token,
+			expires_at = NULL
+		)
+
 		assign("session", session_data, envir = .formr_state)
-		
-		# Verify
+
 		tryCatch({
 			formr_api_request("user/me", method = "GET")
 			message("[SUCCESS] Authenticated via Access Token.")
 		}, error = function(e) {
 			warning("Authentication failed: ", e$message)
 		})
-		
+
 	} else if (!is.null(client_id) && !is.null(client_secret)) {
-		# Client Credentials Flow
 		token_url <- httr::parse_url(host)
 		token_url$path <- paste0(token_url$path, "/oauth/access_token")
 		token_url$path <- gsub("//", "/", token_url$path)
-		
+
 		res <- httr::POST(
 			token_url,
 			httr::authenticate(client_id, client_secret, type = "basic"),
 			body = list(grant_type = "client_credentials"),
 			encode = "form"
 		)
-		
+
 		if (httr::status_code(res) >= 400)
 			stop("OAuth Error: ", httr::content(res, "text"))
-		
-		token <- httr::content(res)$access_token
-		
-		# --- CHANGE: Save to environment ---
-		session_data <- list(base_url = httr::parse_url(host), token = token)
+
+		token_content <- httr::content(res)
+
+		if (is.null(token_content$access_token))
+			stop("OAuth Error: No access_token in response")
+
+		token <- token_content$access_token
+
+		expires_at <- NULL
+		if (!is.null(token_content$expires_in)) {
+			expires_at <- Sys.time() + token_content$expires_in
+		} else {
+			expires_at <- Sys.time() + 3600
+		}
+
+		session_data <- list(
+			base_url = httr::parse_url(host),
+			token = token,
+			expires_at = expires_at
+		)
+
 		assign("session", session_data, envir = .formr_state)
-		
+
 		message("[SUCCESS] Authenticated via OAuth.")
-		
+
 	} else {
 		stop("No credentials found. Use formr_store_keys() or provide arguments.")
 	}
@@ -140,6 +213,63 @@ formr_api_logout <- function() {
 	return(invisible(TRUE))
 }
 
+#' Check if currently authenticated
+#'
+#' Checks if there is a valid, non-expired session. Does NOT verify
+#' token validity with the server (use formr_api_session() for that).
+#'
+#' @return TRUE if authenticated and token not expired, FALSE otherwise.
+#' @export
+formr_api_is_authenticated <- function() {
+	session <- formr_api_session()
+	if (is.null(session)) return(FALSE)
+
+	if (!is.null(session$expires_at)) {
+		if (session$expires_at <= Sys.time()) {
+			return(FALSE)
+		}
+	}
+
+	TRUE
+}
+
+#' Get token expiry information
+#'
+#' Returns information about when the current token expires.
+#'
+#' @return A list with:
+#'   - `expires_at`: POSIXct of expiry time (or NULL if unknown)
+#'   - `seconds_left`: Seconds until expiry (or NA if unknown)
+#'   - `is_expired`: TRUE if token has expired
+#' @export
+formr_api_token_expiry <- function() {
+	session <- formr_api_session()
+
+	if (is.null(session)) {
+		return(list(
+			expires_at = NULL,
+			seconds_left = NA,
+			is_expired = TRUE
+		))
+	}
+
+	if (is.null(session$expires_at)) {
+		return(list(
+			expires_at = NULL,
+			seconds_left = NA,
+			is_expired = FALSE
+		))
+	}
+
+	seconds_left <- as.numeric(difftime(session$expires_at, Sys.time(), units = "secs"))
+
+	list(
+		expires_at = session$expires_at,
+		seconds_left = seconds_left,
+		is_expired = seconds_left <= 0
+	)
+}
+
 #' Internal: API Request Handler
 #' @noRd
 formr_api_request <- function(endpoint,
@@ -184,11 +314,20 @@ formr_api_request <- function(endpoint,
 			)
 		)
 	}
-	
-	if (httr::status_code(req) >= 400) {
+
+	status <- httr::status_code(req)
+
+	if (status == 401) {
+		if (exists("session", envir = .formr_state)) {
+			rm("session", envir = .formr_state)
+		}
+		stop("Authentication failed (401). Your session may have expired. Please run formr_api_authenticate() to reconnect.")
+	}
+
+	if (status >= 400) {
 		stop(sprintf(
 			"API Error (%s): %s",
-			httr::status_code(req),
+			status,
 			httr::content(req, "text")
 		))
 	}

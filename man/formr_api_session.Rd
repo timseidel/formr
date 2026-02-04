@@ -6,6 +6,9 @@
 \usage{
 formr_api_session()
 }
+\value{
+A list with 'base_url' and 'token' elements, or NULL.
+}
 \description{
-Get Current API session
+Returns the current session object or NULL if not authenticated.
 }
