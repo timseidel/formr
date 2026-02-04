@@ -11,7 +11,7 @@ formr_api_session_action(run_name, session_codes, action, position = NULL)
 
 \item{session_codes}{A single code or vector of session codes.}
 
-\item{action}{One of: "end_external", "toggle_testing", "move_to_position".}
+\item{action}{One of: "end_external", "toggle_testing", "move_to_position", "execute", "advance".}
 
 \item{position}{Required only if action is "move_to_position".}
 }

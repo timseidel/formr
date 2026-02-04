@@ -113,14 +113,14 @@ formr_api_create_session <- function(run_name, codes = NULL, testing = FALSE) {
 #' 
 #' @param run_name Name of the run.
 #' @param session_codes A single code or vector of session codes.
-#' @param action One of: "end_external", "toggle_testing", "move_to_position".
+#' @param action One of: "end_external", "toggle_testing", "move_to_position", "execute", "advance".
 #' @param position Required only if action is "move_to_position".
 #' @return A logical vector indicating success for each session.
 #' @export
 formr_api_session_action <- function(run_name, session_codes, action, position = NULL) {
 	
 	# 1. Validation
-	valid_actions <- c("end_external", "toggle_testing", "move_to_position")
+	valid_actions <- c("end_external", "toggle_testing", "move_to_position", "execute", "advance")
 	if (!action %in% valid_actions) {
 		stop("Invalid action. Must be one of: ", paste(valid_actions, collapse = ", "))
 	}
