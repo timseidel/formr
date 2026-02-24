@@ -71,22 +71,38 @@ formr_api_session <- function() {
 #' Authenticate with formr
 #'
 #' Connects to the API. If no credentials are provided, 
-#' it tries to find them in the keyring.
+#' it tries to find them in the Global Environment or keyring.
 #'
 #' @param host API Base URL.
 #' @param client_id OAuth Client ID.
 #' @param client_secret OAuth Client Secret.
 #' @param access_token Direct Access Token.
+#' @param account Optional string identifier for multiple accounts on the same host.
 #' @export
 formr_api_authenticate <- function(host = "https://formr.org",
 																	 client_id = NULL,
 																	 client_secret = NULL,
-																	 access_token = NULL) {
+																	 access_token = NULL,
+																	 account = NULL) {
+	
+	# 0. Try to load from Global Environment if missing
+	if (is.null(access_token) && exists("access_token", envir = .GlobalEnv)) {
+		access_token <- get("access_token", envir = .GlobalEnv)
+	}
+	if (is.null(host) && exists("host", envir = .GlobalEnv)) {
+		host <- get("host", envir = .GlobalEnv)
+	}
 	
 	# 1. Try to load from Keyring if missing
 	if (is.null(client_id) && is.null(access_token) &&
 			requireNamespace("keyring", quietly = TRUE)) {
+		
+		# Construct service name with optional account identifier
 		service_name <- paste0("formr_", host)
+		if (!is.null(account)) {
+			service_name <- paste0(service_name, "_", account)
+		}
+		
 		try({
 			keys <- keyring::key_list(service = service_name)
 			if ("access_token" %in% keys$username) {
@@ -108,55 +124,55 @@ formr_api_authenticate <- function(host = "https://formr.org",
 			token = access_token,
 			expires_at = NULL
 		)
-
+		
 		assign("session", session_data, envir = .formr_state)
-
+		
 		tryCatch({
 			formr_api_request("user/me", method = "GET")
 			message("[SUCCESS] Authenticated via Access Token.")
 		}, error = function(e) {
 			warning("Authentication failed: ", e$message)
 		})
-
+		
 	} else if (!is.null(client_id) && !is.null(client_secret)) {
 		token_url <- httr::parse_url(host)
 		token_url$path <- paste0(token_url$path, "/oauth/access_token")
 		token_url$path <- gsub("//", "/", token_url$path)
-
+		
 		res <- httr::POST(
 			token_url,
 			httr::authenticate(client_id, client_secret, type = "basic"),
 			body = list(grant_type = "client_credentials"),
 			encode = "form"
 		)
-
+		
 		if (httr::status_code(res) >= 400)
 			stop("OAuth Error: ", httr::content(res, "text"))
-
+		
 		token_content <- httr::content(res)
-
+		
 		if (is.null(token_content$access_token))
 			stop("OAuth Error: No access_token in response")
-
+		
 		token <- token_content$access_token
-
+		
 		expires_at <- NULL
 		if (!is.null(token_content$expires_in)) {
 			expires_at <- Sys.time() + token_content$expires_in
 		} else {
 			expires_at <- Sys.time() + 3600
 		}
-
+		
 		session_data <- list(
 			base_url = httr::parse_url(host),
 			token = token,
 			expires_at = expires_at
 		)
-
+		
 		assign("session", session_data, envir = .formr_state)
-
+		
 		message("[SUCCESS] Authenticated via OAuth.")
-
+		
 	} else {
 		stop("No credentials found. Use formr_store_keys() or provide arguments.")
 	}

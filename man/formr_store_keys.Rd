@@ -12,17 +12,18 @@ formr_store_keys(
   host = "https://formr.org",
   client_id = NULL,
   client_secret = NULL,
-  access_token = NULL
+  access_token = NULL,
+  account = NULL
 )
 }
 \arguments{
-\item{account_name}{(Legacy) A shorthand name for the account. If provided, Legacy mode is triggered.}
+\item{account_name}{(Classic) A shorthand name for the account. If provided, Classic mode is triggered.}
 
-\item{email}{(Legacy) Email address for the account. Will be prompted if omitted.}
+\item{email}{(Classic) Email address for the account. Will be prompted if omitted.}
 
-\item{password}{(Legacy) Optional. Provide to skip interactive prompt (useful for scripts/tests).}
+\item{password}{(Classic) Optional. Provide to skip interactive prompt (useful for scripts/tests).}
 
-\item{secret_2fa}{(Legacy) A 2FA secret. Set to NULL to be prompted, or "" if not used.}
+\item{secret_2fa}{(Classic) A 2FA secret. Set to NULL to be prompted, or "" if not used.}
 
 \item{host}{(API) The API URL (e.g., https://formr.org). Defaults to formr.org.}
 
@@ -31,28 +32,34 @@ formr_store_keys(
 \item{client_secret}{(API) OAuth Client Secret.}
 
 \item{access_token}{(API) Direct Personal Access Token (alternative to OAuth).}
+
+\item{account}{(API) Optional string identifier for multiple accounts on the same host.}
 }
 \description{
 Securely stores formr credentials in the system keyring.
 This function supports two modes:
 \enumerate{
-\item \strong{Legacy Mode:} Stores email/password (and optional 2FA) for a specific account name.
+\item \strong{Classic Mode:} Stores email/password (and optional 2FA) for a specific account name.
 \item \strong{API Mode:} Stores OAuth credentials or Access Tokens for a specific host.
 }
 }
 \examples{
 \dontrun{
-# --- LEGACY EXAMPLES ---
+# --- Classic EXAMPLES ---
 # Prompts for password interactively
 formr_store_keys("formr_diary_study_account")
 
 # --- NEW API EXAMPLES ---
-# Store Personal Access Token
-formr_store_keys(access_token = "your-token-here")
 
 # Store OAuth Credentials for a custom host
 formr_store_keys(host = "http://localhost",
                  client_id = "my-id",
                  client_secret = "my-secret")
+                 
+# Store token for a specific secondary account
+formr_store_keys(host = "http://localhost",
+                 client_id = "my-id",
+                 client_secret = "my-secret",
+                 account = "project_b")
 }
 }

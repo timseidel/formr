@@ -110,19 +110,9 @@ formr_api_survey_structure <- function(survey_name, format = "json", file_path =
 #' Uploads a survey structure.
 #' 
 #' @param file_path Path to a local file.
-#' @param survey_name Optional name.
 #' @param google_sheet_url Google Sheet URL.
 #' @export
-formr_api_upload_survey <- function(file_path = NULL, survey_name = NULL, google_sheet_url = NULL) {
-	
-	if (is.null(survey_name)) {
-		if (!is.null(file_path)) {
-			survey_name <- tools::file_path_sans_ext(basename(file_path))
-			message(sprintf("[INFO] Name not provided. Defaulting survey_name to '%s'", survey_name))
-		} else {
-			stop("You must provide 'survey_name' if you are not providing a local 'file_path'.")
-		}
-	}
+formr_api_upload_survey <- function(file_path = NULL, google_sheet_url = NULL) {
 	
 	body <- list()
 	
@@ -135,8 +125,9 @@ formr_api_upload_survey <- function(file_path = NULL, survey_name = NULL, google
 		stop("You must provide either 'file_path' or 'google_sheet_url'.")
 	}
 	
+	# POST to /surveys (collection) to create or update based on filename
 	res <- formr_api_request(
-		endpoint = paste0("surveys/", survey_name),
+		endpoint = "surveys",
 		method = "POST",
 		body = body,
 		encode = "multipart" 

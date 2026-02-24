@@ -73,6 +73,8 @@ formr_store_keys(
   host = "https://api.formr.org", 
   client_id = "YOUR_CLIENT_ID", 
   client_secret = "YOUR_CLIENT_SECRET"
+  # Optional: account = "the name you give the account"
+  # this allows for multiple saved API IDs and secrets per host.
 )
 ```
 
@@ -96,7 +98,7 @@ Once your keys are stored, you simply authenticate at the start of your session:
 
 ```{r, auth_local, eval = FALSE}
 # Automatically finds your stored keys
-formr_api_authenticate(host = "https://api.formr.org") # or your custom URL!
+formr_api_authenticate(host = "https://api.formr.org") # or your custom API-URL!
 ```
 
 #### 1.2 With your User Credentials (Classic)
@@ -114,7 +116,7 @@ You can also use the API functions within the R-Code of your actual survey run (
 
 ```{r, auth_run, eval = FALSE}
 # Inside a formr Run, simply call:
-formr_api_authenticate()
+formr_api_authenticate(host = "https://api.formr.org") # or your custom API-URL!
 ```
 
 ---

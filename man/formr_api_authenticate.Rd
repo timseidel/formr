@@ -8,7 +8,8 @@ formr_api_authenticate(
   host = "https://formr.org",
   client_id = NULL,
   client_secret = NULL,
-  access_token = NULL
+  access_token = NULL,
+  account = NULL
 )
 }
 \arguments{
@@ -19,8 +20,10 @@ formr_api_authenticate(
 \item{client_secret}{OAuth Client Secret.}
 
 \item{access_token}{Direct Access Token.}
+
+\item{account}{Optional string identifier for multiple accounts on the same host.}
 }
 \description{
 Connects to the API. If no credentials are provided,
-it tries to find them in the keyring.
+it tries to find them in the Global Environment or keyring.
 }

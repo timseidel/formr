@@ -2,33 +2,38 @@
 #'
 #' Securely stores formr credentials in the system keyring.
 #' This function supports two modes:
-#' 1. **Legacy Mode:** Stores email/password (and optional 2FA) for a specific account name.
+#' 1. **Classic Mode:** Stores email/password (and optional 2FA) for a specific account name.
 #' 2. **API Mode:** Stores OAuth credentials or Access Tokens for a specific host.
 #'
-#' @param account_name (Legacy) A shorthand name for the account. If provided, Legacy mode is triggered.
-#' @param email (Legacy) Email address for the account. Will be prompted if omitted.
-#' @param password (Legacy) Optional. Provide to skip interactive prompt (useful for scripts/tests).
-#' @param secret_2fa (Legacy) A 2FA secret. Set to NULL to be prompted, or "" if not used.
+#' @param account_name (Classic) A shorthand name for the account. If provided, Classic mode is triggered.
+#' @param email (Classic) Email address for the account. Will be prompted if omitted.
+#' @param password (Classic) Optional. Provide to skip interactive prompt (useful for scripts/tests).
+#' @param secret_2fa (Classic) A 2FA secret. Set to NULL to be prompted, or "" if not used.
 #' @param host (API) The API URL (e.g., https://formr.org). Defaults to formr.org.
 #' @param client_id (API) OAuth Client ID.
 #' @param client_secret (API) OAuth Client Secret.
 #' @param access_token (API) Direct Personal Access Token (alternative to OAuth).
+#' @param account (API) Optional string identifier for multiple accounts on the same host.
 #'
 #' @export
 #' @examples
 #' \dontrun{
-#' # --- LEGACY EXAMPLES ---
+#' # --- Classic EXAMPLES ---
 #' # Prompts for password interactively
 #' formr_store_keys("formr_diary_study_account")
 #'
 #' # --- NEW API EXAMPLES ---
-#' # Store Personal Access Token
-#' formr_store_keys(access_token = "your-token-here")
 #'
 #' # Store OAuth Credentials for a custom host
 #' formr_store_keys(host = "http://localhost",
 #'                  client_id = "my-id",
 #'                  client_secret = "my-secret")
+#'                  
+#' # Store token for a specific secondary account
+#' formr_store_keys(host = "http://localhost",
+#'                  client_id = "my-id",
+#'                  client_secret = "my-secret",
+#'                  account = "project_b")
 #' }
 formr_store_keys <- function(account_name = NULL,
 														 email = NULL,
@@ -37,13 +42,14 @@ formr_store_keys <- function(account_name = NULL,
 														 host = "https://formr.org",
 														 client_id = NULL,
 														 client_secret = NULL,
-														 access_token = NULL) {
+														 access_token = NULL,
+														 account = NULL) {
 	
 	if (!requireNamespace("keyring", quietly = TRUE)) {
 		stop("Package 'keyring' is required.")
 	}
 	
-	# --- LOGIC BRANCH 1: LEGACY MODE ---
+	# --- LOGIC BRANCH 1: Classic MODE ---
 	# Triggered if the user provides a positional argument or explicitly sets account_name
 	if (!is.null(account_name)) {
 		
@@ -80,7 +86,7 @@ formr_store_keys <- function(account_name = NULL,
 			)
 		}
 		
-		message("[SUCCESS] Legacy credentials stored for account: ", account_name)
+		message("[SUCCESS] Classic credentials stored for account: ", account_name)
 		return(invisible(NULL))
 	}
 	
@@ -89,10 +95,14 @@ formr_store_keys <- function(account_name = NULL,
 	
 	# Validation: Ensure the user actually provided new credentials
 	if (is.null(access_token) && (is.null(client_id) || is.null(client_secret))) {
-		stop("Invalid usage. Please provide either a legacy 'account_name' OR API credentials (access_token OR client_id + client_secret).")
+		stop("Invalid usage. Please provide either a Classic 'account_name' OR API credentials (access_token OR client_id + client_secret).")
 	}
 	
+	# Construct service name with optional account identifier
 	service_name <- paste0("formr_", host)
+	if (!is.null(account)) {
+		service_name <- paste0(service_name, "_", account)
+	}
 	
 	if (!is.null(access_token)) {
 		keyring::key_set_with_value(
@@ -100,7 +110,7 @@ formr_store_keys <- function(account_name = NULL,
 			username = "access_token",
 			password = access_token
 		)
-		message("[SUCCESS] Access Token stored for ", host)
+		message("[SUCCESS] Access Token stored for ", service_name)
 		
 	} else if (!is.null(client_id) && !is.null(client_secret)) {
 		keyring::key_set_with_value(
@@ -113,6 +123,6 @@ formr_store_keys <- function(account_name = NULL,
 			username = "client_secret",
 			password = client_secret
 		)
-		message("[SUCCESS] OAuth Credentials stored for ", host)
+		message("[SUCCESS] OAuth Credentials stored for ", service_name)
 	}
 }

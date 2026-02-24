@@ -4,16 +4,10 @@
 \alias{formr_api_upload_survey}
 \title{Upload/Update Survey}
 \usage{
-formr_api_upload_survey(
-  file_path = NULL,
-  survey_name = NULL,
-  google_sheet_url = NULL
-)
+formr_api_upload_survey(file_path = NULL, google_sheet_url = NULL)
 }
 \arguments{
 \item{file_path}{Path to a local file.}
-
-\item{survey_name}{Optional name.}
 
 \item{google_sheet_url}{Google Sheet URL.}
 }
