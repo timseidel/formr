@@ -143,7 +143,7 @@ formr_api_results <- function(run_name,
 	process_single_survey <- function(df, survey_name) {
 		if (nrow(df) == 0) return(df)
 		
-		# A. Filter Test Sessions
+		# 1. Filter Test Sessions
 		if (remove_test_sessions && "session" %in% names(df)) {
 			initial_count <- nrow(df)
 			if (length(test_session_codes) > 0) df <- df[ !df$session %in% test_session_codes, ]
@@ -155,10 +155,30 @@ formr_api_results <- function(run_name,
 			}
 		}
 		
-		# B. Metadata & Processing
+		# 2. Identify and Drop Non-Data Columns
 		survey_meta <- .extract_items_for_survey(structure, survey_name)
 		if (is.null(survey_meta)) return(df)
 		
+		# Define types that DO NOT contain user data
+		ignored_types <- c("note", "submit", "block", "mcq_header", "button", "image")
+		
+		# Get names of items that are NOT in the ignored list
+		data_item_names <- survey_meta$name[ !survey_meta$type %in% ignored_types ]
+		
+		# Always keep these system columns
+		system_cols <- c("session", "created", "modified", "ended", "expired")
+		
+		# Perform the subset
+		final_cols <- intersect(names(df), c(system_cols, data_item_names))
+		
+		dropped_count <- length(setdiff(names(df), final_cols))
+		df <- df[, final_cols, drop = FALSE]
+		
+		if (dropped_count > 0) {
+			df <- .log_action(df, "Clean", sprintf("Dropped %d decorative columns (notes/pics/headers)", dropped_count))
+		}
+		
+		# 3. Standard Processing (Recognise, Reverse, Aggregate)
 		df <- formr_api_recognise(survey_meta, df) 
 		df <- formr_api_reverse(df, survey_meta)   
 		
@@ -193,7 +213,6 @@ formr_api_results <- function(run_name,
 }
 
 #' Apply Type Definitions and Labels
-#' 
 #' @param item_list A data frame containing item metadata.
 #' @param results A data frame containing the raw results.
 #' @export
@@ -204,7 +223,9 @@ formr_api_recognise <- function(item_list, results) {
 	# 1. Timestamps
 	time_cols <- intersect(names(results), c("created", "modified", "ended"))
 	for(col in time_cols) {
-		if(!inherits(results[[col]], "POSIXct")) results[[col]] <- as.POSIXct(results[[col]])
+		if(!inherits(results[[col]], "POSIXct")) {
+			results[[col]] <- tryCatch(as.POSIXct(results[[col]]), error = function(e) results[[col]])
+		}
 		attr(results[[col]], "label") <- paste("Timestamp:", tools::toTitleCase(col))
 	}
 	
@@ -220,46 +241,64 @@ formr_api_recognise <- function(item_list, results) {
 		# Label Attribute
 		raw_label <- if(!is.null(item_row$label)) item_row$label else ""
 		clean_label <- trimws(gsub("<[^>]+>", "", raw_label))
-		if (length(clean_label) > 0) attr(results[[name]], "label") <- clean_label
+		if (nchar(clean_label) > 0) attr(results[[name]], "label") <- clean_label
 		
 		# Choice Handling (Labelled/Factor)
 		if ("choices" %in% names(item_row) && !is.null(item_row$choices[[1]])) {
 			choices <- item_row$choices[[1]]
 			
-			# --- Prune NULLs to prevent length mismatch ---
-			# e.g. converts list("A"=1, "B"=NULL) to list("A"=1)
+			# Prune NULLs
 			if (is.list(choices)) {
 				choices <- choices[ !vapply(choices, is.null, logical(1)) ]
 			}
 			
 			if (length(choices) > 0) {
-				val <- results[[name]]
+				ch_names  <- names(choices)
+				ch_values <- vapply(choices, function(x) {
+					if (is.null(x) || length(x) == 0) return(NA_character_)
+					as.character(x[[1]])
+				}, character(1))
 				
-				# Determine numeric values vs labels
-				num_vals <- suppressWarnings(as.numeric(names(choices)))
-				if(!any(is.na(num_vals))) {
-					vals <- num_vals; labs <- unlist(choices)
-				} else {
-					vals <- unlist(choices); labs <- names(choices)
-					if(is.null(labs)) labs <- vals
+				if (length(ch_names) != length(ch_values)) {
+					warning(sprintf("Skipping labels for '%s': labels and values mismatch.", name))
+					next
 				}
 				
-				# Force numeric underlying data
-				if(!is.numeric(val)) results[[name]] <- suppressWarnings(as.numeric(val))
+				# Detect if choices are Value = Label or Label = Value
+				names_num  <- suppressWarnings(as.numeric(ch_names))
+				values_num <- suppressWarnings(as.numeric(ch_values))
 				
-				# Apply haven labels safely
+				if (!any(is.na(names_num))) {
+					# Names are numeric (e.g. list("1" = "Agree"))
+					data_values <- names_num
+					value_labels <- as.character(ch_values)
+				} else if (!any(is.na(values_num))) {
+					# Values are numeric (e.g. list("Agree" = 1))
+					data_values <- values_num
+					value_labels <- ch_names
+				} else {
+					# Text-to-text (e.g. list("Yes" = "yes"))
+					data_values <- as.character(ch_values)
+					value_labels <- ch_names
+				}
+				
+				# Match the type of data_values to the type of the actual column
+				# to prevent the "Can't convert labels to match x" error.
+				if (is.numeric(results[[name]])) {
+					data_values <- suppressWarnings(as.numeric(data_values))
+				} else {
+					data_values <- as.character(data_values)
+				}
+				
+				# Apply haven labels
 				tryCatch({
-					# Check lengths to be absolutely sure before setting names
-					if (length(vals) == length(labs)) {
-						results[[name]] <- haven::labelled(results[[name]], stats::setNames(vals, labs))
-					}
+					results[[name]] <- haven::labelled(results[[name]], stats::setNames(data_values, value_labels))
 				}, error = function(e) {
-					# Log warning but don't stop
 					warning(sprintf("Failed to apply labels to '%s': %s", name, e$message))
 				})
 			}
 		} 
-		# Explicit Types
+		# Explicit Types for non-choice items
 		else if (type %in% c("date", "datetime")) {
 			results[[name]] <- tryCatch(as.POSIXct(results[[name]]), error = function(e) results[[name]])
 		} else if (type %in% c("number", "range", "calculate")) {
@@ -267,7 +306,6 @@ formr_api_recognise <- function(item_list, results) {
 		}
 	}
 	
-	# Log action if the logging helper exists
 	if (exists(".log_action", mode="function")) {
 		results <- .log_action(results, "Recognize", sprintf("Applied types/labels to %d items", nrow(items_to_process)))
 	}
