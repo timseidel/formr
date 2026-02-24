@@ -18,6 +18,8 @@ knitr::opts_chunk$set(
 #   host = "https://api.formr.org",
 #   client_id = "YOUR_CLIENT_ID",
 #   client_secret = "YOUR_CLIENT_SECRET"
+#   # Optional: account = "the name you give the account"
+#   # this allows for multiple saved API IDs and secrets per host.
 # )
 
 ## ----store_keys_classic, eval = FALSE-----------------------------------------
@@ -26,7 +28,7 @@ knitr::opts_chunk$set(
 
 ## ----auth_local, eval = FALSE-------------------------------------------------
 # # Automatically finds your stored keys
-# formr_api_authenticate(host = "https://api.formr.org") # or your custom URL!
+# formr_api_authenticate(host = "https://api.formr.org") # or your custom API-URL!
 
 ## ----connect_classic, eval = FALSE--------------------------------------------
 # # Connect using the stored credentials
@@ -34,7 +36,7 @@ knitr::opts_chunk$set(
 
 ## ----auth_run, eval = FALSE---------------------------------------------------
 # # Inside a formr Run, simply call:
-# formr_api_authenticate()
+# formr_api_authenticate(host = "https://api.formr.org") # or your custom API-URL!
 
 ## ----push_pull, eval = FALSE--------------------------------------------------
 # # Download a project (surveys and files) to your local folder

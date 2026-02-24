@@ -62,7 +62,7 @@ test_that("formr_store_keys (API Mode) stores OAuth Client Credentials correctly
 })
 
 
-test_that("formr_store_keys (Legacy Mode) stores credentials correctly", {
+test_that("formr_store_keys (Classic Mode) stores credentials correctly", {
 	skip_if_not_installed("keyring")
 	
 	# 1. Setup: Use 'env' backend to avoid OS popups and persistence
@@ -84,7 +84,7 @@ test_that("formr_store_keys (Legacy Mode) stores credentials correctly", {
 			password = test_pass,
 			secret_2fa = test_2fa
 		),
-		"\\[SUCCESS\\] Legacy credentials stored"
+		"\\[SUCCESS\\] Classic credentials stored" # <-- Updated this line
 	)
 	
 	# 4. Verify the keys were actually stored in the keyring

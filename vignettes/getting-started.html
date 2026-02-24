@@ -422,7 +422,9 @@ you don’t have to type them every time.</p>
 <span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">host =</span> <span class="st">&quot;https://api.formr.org&quot;</span>, </span>
 <span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">client_id =</span> <span class="st">&quot;YOUR_CLIENT_ID&quot;</span>, </span>
 <span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="at">client_secret =</span> <span class="st">&quot;YOUR_CLIENT_SECRET&quot;</span></span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>)</span></code></pre></div>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  <span class="co"># Optional: account = &quot;the name you give the account&quot;</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>  <span class="co"># this allows for multiple saved API IDs and secrets per host.</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>)</span></code></pre></div>
 </div>
 <div id="save-your-regular-user-credentials-classic" class="section level4">
 <h4>1.2 Save your regular User Credentials (Classic)</h4>
@@ -447,7 +449,7 @@ your session:</p>
 <div id="thru-the-api" class="section level4">
 <h4>1.1 Thru the API</h4>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Automatically finds your stored keys</span></span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">formr_api_authenticate</span>(<span class="at">host =</span> <span class="st">&quot;https://api.formr.org&quot;</span>) <span class="co"># or your custom URL!</span></span></code></pre></div>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">formr_api_authenticate</span>(<span class="at">host =</span> <span class="st">&quot;https://api.formr.org&quot;</span>) <span class="co"># or your custom API-URL!</span></span></code></pre></div>
 </div>
 <div id="with-your-user-credentials-classic" class="section level4">
 <h4>1.2 With your User Credentials (Classic)</h4>
@@ -464,7 +466,7 @@ survey run (e.g., to look up previous results). In this environment, you
 do not need credentials; the system provides a temporary context. Just
 run:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Inside a formr Run, simply call:</span></span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">formr_api_authenticate</span>()</span></code></pre></div>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">formr_api_authenticate</span>(<span class="at">host =</span> <span class="st">&quot;https://api.formr.org&quot;</span>) <span class="co"># or your custom API-URL!</span></span></code></pre></div>
 <hr />
 </div>
 </div>

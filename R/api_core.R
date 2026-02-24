@@ -125,6 +125,7 @@ formr_api_authenticate <- function(host = "https://formr.org",
 			expires_at = NULL
 		)
 		
+		assign("auth_params", list(host = host, account = account), envir = .formr_state)
 		assign("session", session_data, envir = .formr_state)
 		
 		tryCatch({
@@ -169,6 +170,7 @@ formr_api_authenticate <- function(host = "https://formr.org",
 			expires_at = expires_at
 		)
 		
+		assign("auth_params", list(host = host, account = account), envir = .formr_state)
 		assign("session", session_data, envir = .formr_state)
 		
 		message("[SUCCESS] Authenticated via OAuth.")
@@ -223,6 +225,9 @@ formr_api_logout <- function() {
 	# 4. Clear Local Session (Always do this, even if server request fails)
 	if (exists("session", envir = .formr_state)) {
 		rm("session", envir = .formr_state)
+	}
+	if (exists("auth_params", envir = .formr_state)) {
+		rm("auth_params", envir = .formr_state)
 	}
 	
 	message("[SUCCESS] Local session cleared.")
@@ -293,8 +298,19 @@ formr_api_request <- function(endpoint,
 															body = NULL,
 															query = NULL,
 															api_version = "v1",
-															encode = NULL) {
+															encode = NULL,
+															retry = TRUE) {
+	
 	session <- formr_api_session()
+	
+	if (is.null(session) && exists("auth_params", envir = .formr_state) && retry) {
+		auth_params <- get("auth_params", envir = .formr_state)
+		try({
+			suppressMessages(formr_api_authenticate(host = auth_params$host, account = auth_params$account))
+			session <- formr_api_session()
+		}, silent = TRUE)
+	}
+	
 	if (is.null(session))
 		stop("Not authenticated. Run formr_api_authenticate().")
 	
@@ -334,10 +350,25 @@ formr_api_request <- function(endpoint,
 	status <- httr::status_code(req)
 
 	if (status == 401) {
+		# Clear the bad session
 		if (exists("session", envir = .formr_state)) {
 			rm("session", envir = .formr_state)
 		}
-		stop("Authentication failed (401). Your session may have expired. Please run formr_api_authenticate() to reconnect.")
+		
+		# If we haven't retried yet, and we have the credentials to try again
+		if (retry && exists("auth_params", envir = .formr_state)) {
+			auth_params <- get("auth_params", envir = .formr_state)
+			try({
+				suppressMessages(formr_api_authenticate(host = auth_params$host, account = auth_params$account))
+			}, silent = TRUE)
+			
+			# Recursively call the request again, but disable retry so it fails properly if it 401s again
+			return(formr_api_request(endpoint = endpoint, method = method, body = body, 
+															 query = query, api_version = api_version, encode = encode, 
+															 retry = FALSE))
+		} else {
+			stop("Authentication failed (401). Your session may have expired. Please run formr_api_authenticate() to reconnect.")
+		}
 	}
 
 	if (status >= 400) {
