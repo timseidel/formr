@@ -238,10 +238,9 @@ formr_api_recognise <- function(item_list, results) {
 		name <- item_row$name
 		type <- item_row$type
 		
-		# Label Attribute
+		# Extract Label (but don't apply it yet)
 		raw_label <- if(!is.null(item_row$label)) item_row$label else ""
 		clean_label <- trimws(gsub("<[^>]+>", "", raw_label))
-		if (nchar(clean_label) > 0) attr(results[[name]], "label") <- clean_label
 		
 		# Choice Handling (Labelled/Factor)
 		if ("choices" %in% names(item_row) && !is.null(item_row$choices[[1]])) {
@@ -259,43 +258,34 @@ formr_api_recognise <- function(item_list, results) {
 					as.character(x[[1]])
 				}, character(1))
 				
-				if (length(ch_names) != length(ch_values)) {
-					warning(sprintf("Skipping labels for '%s': labels and values mismatch.", name))
-					next
-				}
+				if (length(ch_names) != length(ch_values)) next # Skip silently
 				
 				# Detect if choices are Value = Label or Label = Value
 				names_num  <- suppressWarnings(as.numeric(ch_names))
 				values_num <- suppressWarnings(as.numeric(ch_values))
 				
 				if (!any(is.na(names_num))) {
-					# Names are numeric (e.g. list("1" = "Agree"))
 					data_values <- names_num
 					value_labels <- as.character(ch_values)
 				} else if (!any(is.na(values_num))) {
-					# Values are numeric (e.g. list("Agree" = 1))
 					data_values <- values_num
 					value_labels <- ch_names
 				} else {
-					# Text-to-text (e.g. list("Yes" = "yes"))
 					data_values <- as.character(ch_values)
 					value_labels <- ch_names
 				}
 				
 				# Match the type of data_values to the type of the actual column
-				# to prevent the "Can't convert labels to match x" error.
 				if (is.numeric(results[[name]])) {
 					data_values <- suppressWarnings(as.numeric(data_values))
 				} else {
 					data_values <- as.character(data_values)
 				}
 				
-				# Apply haven labels
+				# Apply haven labels silently
 				tryCatch({
 					results[[name]] <- haven::labelled(results[[name]], stats::setNames(data_values, value_labels))
-				}, error = function(e) {
-					warning(sprintf("Failed to apply labels to '%s': %s", name, e$message))
-				})
+				}, error = function(e) NULL)
 			}
 		} 
 		# Explicit Types for non-choice items
@@ -303,6 +293,12 @@ formr_api_recognise <- function(item_list, results) {
 			results[[name]] <- tryCatch(as.POSIXct(results[[name]]), error = function(e) results[[name]])
 		} else if (type %in% c("number", "range", "calculate")) {
 			results[[name]] <- suppressWarnings(as.numeric(results[[name]]))
+		}
+		
+		# APPLY LABEL TO FINAL VECTOR
+		# Placed here so it isn't stripped by the conversions above
+		if (nchar(clean_label) > 0) {
+			attr(results[[name]], "label") <- clean_label
 		}
 	}
 	
@@ -473,12 +469,28 @@ formr_api_aggregate <- function(results, item_list, min_items = 2) {
 #' @noRd
 .extract_items_for_survey <- function(structure, survey_name) {
 	if (is.null(structure$units)) return(NULL)
+	
 	for (unit in structure$units) {
 		if (unit$type == "Survey" && !is.null(unit$survey_data$name)) {
 			if (trimws(unit$survey_data$name) == trimws(survey_name)) {
 				items <- unit$survey_data$items
 				if (is.null(items) || length(items) == 0) return(NULL)
-				return(dplyr::bind_rows(items))
+				
+				df <- dplyr::bind_rows(items)
+				
+				# If an item name appears multiple times, aggregate its choices
+				if ("name" %in% names(df) && any(duplicated(df$name))) {
+					df <- df %>%
+						dplyr::group_by(.data$name) %>%
+						dplyr::mutate(
+							# Combine all fragmented choices into a single list
+							choices = if ("choices" %in% names(.)) list(do.call(c, .data$choices)) else list(NULL)
+						) %>%
+						dplyr::slice(1) %>% # Keep only the first row for the core metadata
+						dplyr::ungroup()
+				}
+				
+				return(df)
 			}
 		}
 	}
