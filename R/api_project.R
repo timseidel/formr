@@ -448,7 +448,7 @@ sync_run_settings <- function(run_name, dir) {
 		
 		if (length(files_list) > 0) {
 			files_dir <- file.path(dir, "files")
-			
+
 			# Strict check for subfolder creation
 			if (!dir.exists(files_dir)) {
 				if (!dir.create(files_dir, recursive = TRUE)) {
@@ -456,12 +456,37 @@ sync_run_settings <- function(run_name, dir) {
 					return()
 				}
 			}
-			
+
+			# Pin downloads to the authenticated host so a malicious server response
+			# cannot redirect us to file:// URLs or a third-party origin.
+			session <- formr_api_session()
+			expected_host <- if (!is.null(session)) tolower(session$base_url$hostname) else NULL
+
 			f_count <- 0
 			for (f in files_list) {
-				safe_name <- gsub(" ", "_", f$name)
+				# Strip any directory component from the server-supplied name before
+				# joining with files_dir — otherwise "../../.Rprofile" would escape
+				# files_dir and overwrite arbitrary user-owned files.
+				raw_name <- f$name
+				base_name <- basename(raw_name)
+				if (is.null(raw_name) || !nzchar(base_name) ||
+						base_name %in% c(".", "..") ||
+						grepl("[/\\\\]", raw_name) ||
+						startsWith(base_name, ".")) {
+					message("   [WARNING] Skipping file with unsafe name: '", raw_name, "'")
+					next
+				}
+				safe_name <- gsub(" ", "_", base_name)
 				dest <- file.path(files_dir, safe_name)
-				
+
+				parsed <- tryCatch(httr::parse_url(f$url), error = function(e) NULL)
+				if (is.null(parsed) || !isTRUE(parsed$scheme %in% c("http", "https")) ||
+						is.null(parsed$hostname) || is.null(expected_host) ||
+						!identical(tolower(parsed$hostname), expected_host)) {
+					message("   [WARNING] Skipping file with unsafe URL for '", raw_name, "'")
+					next
+				}
+
 				tryCatch({
 					download.file(f$url, dest, mode = "wb", quiet = TRUE)
 					f_count <- f_count + 1
