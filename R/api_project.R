@@ -468,14 +468,19 @@ sync_run_settings <- function(run_name, dir) {
 				}
 			}
 
+			# Pin downloads to the authenticated origin, but accept sibling
+			# subdomains: the API lives at api.<domain> while file URLs are
+			# served from the admin domain <domain>, so we allow exact match
+			# or either being a subdomain of the other. Unrelated origins
+			# (e.g. formr.org.evil.com) are still rejected.
+			session <- formr_api_session()
+			expected_host <- if (!is.null(session)) tolower(session$base_url$hostname) else NULL
+
 			f_count <- 0
 			for (f in files_list) {
 				# Strip any directory component from the server-supplied name before
 				# joining with files_dir — otherwise "../../.Rprofile" would escape
-				# files_dir and overwrite arbitrary user-owned files. The hostname
-				# isn't pinned because the server returns file URLs under its admin
-				# domain (e.g. formr.org) while the client is typically authenticated
-				# against the api. subdomain, so a hostname match isn't reliable.
+				# files_dir and overwrite arbitrary user-owned files.
 				raw_name <- f$name
 				base_name <- basename(raw_name)
 				if (is.null(raw_name) || !nzchar(base_name) ||
@@ -489,8 +494,13 @@ sync_run_settings <- function(run_name, dir) {
 				dest <- file.path(files_dir, safe_name)
 
 				parsed <- tryCatch(httr::parse_url(f$url), error = function(e) NULL)
-				if (is.null(parsed) || !isTRUE(parsed$scheme %in% c("http", "https"))) {
-					message("   [WARNING] Skipping file with non-http(s) URL for '", raw_name, "'")
+				parsed_host <- if (!is.null(parsed$hostname)) tolower(parsed$hostname) else NULL
+				host_ok <- !is.null(parsed_host) && !is.null(expected_host) &&
+					(identical(parsed_host, expected_host) ||
+					 endsWith(parsed_host, paste0(".", expected_host)) ||
+					 endsWith(expected_host, paste0(".", parsed_host)))
+				if (is.null(parsed) || !isTRUE(parsed$scheme %in% c("http", "https")) || !host_ok) {
+					message("   [WARNING] Skipping file with unsafe URL for '", raw_name, "'")
 					next
 				}
 
