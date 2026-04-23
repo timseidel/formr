@@ -280,7 +280,7 @@ handle_api_project_changes <- function(run_name, dir, changes) {
 		
 		tryCatch(
 			{
-				formr_api_upload_survey(file_path = file.path(dir, f), survey_name = s_name)
+				formr_api_upload_survey(file_path = file.path(dir, f))
 				message("   [SUCCESS] Upload success")
 			},
 			error = function(e) {
