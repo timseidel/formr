@@ -413,7 +413,18 @@ sync_run_settings <- function(run_name, dir) {
 			if (is.list(unit$survey_data) && !is.null(unit$survey_data$name)) {
 				survey_name <- unit$survey_data$name
 			}
-			
+
+			# Only accept server-supplied survey names that match the pattern the
+			# server itself uses for survey identifiers. This prevents a
+			# malicious/compromised server from returning a name like
+			# "../../.Rprofile" that would otherwise flow into file.path() below
+			# and escape survey_dir when the XLSX is written to disk.
+			if (!is.null(survey_name) &&
+					!grepl("^[a-zA-Z][a-zA-Z0-9_]{2,64}$", survey_name)) {
+				message("   [WARNING] Skipping survey with unsafe name: '", survey_name, "'")
+				survey_name <- NULL
+			}
+
 			if (!is.null(survey_name)) {
 				dest <- file.path(survey_dir, paste0(survey_name, ".xlsx"))
 				tryCatch({
@@ -457,16 +468,14 @@ sync_run_settings <- function(run_name, dir) {
 				}
 			}
 
-			# Pin downloads to the authenticated host so a malicious server response
-			# cannot redirect us to file:// URLs or a third-party origin.
-			session <- formr_api_session()
-			expected_host <- if (!is.null(session)) tolower(session$base_url$hostname) else NULL
-
 			f_count <- 0
 			for (f in files_list) {
 				# Strip any directory component from the server-supplied name before
 				# joining with files_dir — otherwise "../../.Rprofile" would escape
-				# files_dir and overwrite arbitrary user-owned files.
+				# files_dir and overwrite arbitrary user-owned files. The hostname
+				# isn't pinned because the server returns file URLs under its admin
+				# domain (e.g. formr.org) while the client is typically authenticated
+				# against the api. subdomain, so a hostname match isn't reliable.
 				raw_name <- f$name
 				base_name <- basename(raw_name)
 				if (is.null(raw_name) || !nzchar(base_name) ||
@@ -480,10 +489,8 @@ sync_run_settings <- function(run_name, dir) {
 				dest <- file.path(files_dir, safe_name)
 
 				parsed <- tryCatch(httr::parse_url(f$url), error = function(e) NULL)
-				if (is.null(parsed) || !isTRUE(parsed$scheme %in% c("http", "https")) ||
-						is.null(parsed$hostname) || is.null(expected_host) ||
-						!identical(tolower(parsed$hostname), expected_host)) {
-					message("   [WARNING] Skipping file with unsafe URL for '", raw_name, "'")
+				if (is.null(parsed) || !isTRUE(parsed$scheme %in% c("http", "https"))) {
+					message("   [WARNING] Skipping file with non-http(s) URL for '", raw_name, "'")
 					next
 				}
 
