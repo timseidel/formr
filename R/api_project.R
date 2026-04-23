@@ -468,13 +468,19 @@ sync_run_settings <- function(run_name, dir) {
 				}
 			}
 
-			# Pin downloads to the authenticated origin, but accept sibling
-			# subdomains: the API lives at api.<domain> while file URLs are
-			# served from the admin domain <domain>, so we allow exact match
-			# or either being a subdomain of the other. Unrelated origins
-			# (e.g. formr.org.evil.com) are still rejected.
+			# Pin downloads to the authenticated origin. Accept exact match,
+			# a super/sub relationship (e.g. api.formr.org ↔ formr.org), or
+			# a shared parent so siblings like api.formr.org and cdn.formr.org
+			# both resolve. The sibling check approximates eTLD+1 by
+			# stripping the leading label; it is gated on each host having
+			# ≥ 3 labels so that e.g. a.com and b.com don't collapse into
+			# "com". This is imperfect on public-suffix TLDs like .co.uk
+			# (example.co.uk and evil.co.uk would be treated as siblings) —
+			# acceptable because this is defense-in-depth on top of the
+			# basename() sanitisation of the destination path.
 			session <- formr_api_session()
 			expected_host <- if (!is.null(session)) tolower(session$base_url$hostname) else NULL
+			expected_parts <- if (!is.null(expected_host)) strsplit(expected_host, ".", fixed = TRUE)[[1]] else NULL
 
 			f_count <- 0
 			for (f in files_list) {
@@ -495,10 +501,15 @@ sync_run_settings <- function(run_name, dir) {
 
 				parsed <- tryCatch(httr::parse_url(f$url), error = function(e) NULL)
 				parsed_host <- if (!is.null(parsed$hostname)) tolower(parsed$hostname) else NULL
-				host_ok <- !is.null(parsed_host) && !is.null(expected_host) &&
-					(identical(parsed_host, expected_host) ||
-					 endsWith(parsed_host, paste0(".", expected_host)) ||
-					 endsWith(expected_host, paste0(".", parsed_host)))
+				host_ok <- FALSE
+				if (!is.null(parsed_host) && !is.null(expected_host)) {
+					parsed_parts <- strsplit(parsed_host, ".", fixed = TRUE)[[1]]
+					host_ok <- identical(parsed_host, expected_host) ||
+						endsWith(parsed_host, paste0(".", expected_host)) ||
+						endsWith(expected_host, paste0(".", parsed_host)) ||
+						(length(parsed_parts) >= 3 && length(expected_parts) >= 3 &&
+						 identical(parsed_parts[-1], expected_parts[-1]))
+				}
 				if (is.null(parsed) || !isTRUE(parsed$scheme %in% c("http", "https")) || !host_ok) {
 					message("   [WARNING] Skipping file with unsafe URL for '", raw_name, "'")
 					next
