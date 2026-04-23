@@ -413,7 +413,18 @@ sync_run_settings <- function(run_name, dir) {
 			if (is.list(unit$survey_data) && !is.null(unit$survey_data$name)) {
 				survey_name <- unit$survey_data$name
 			}
-			
+
+			# Only accept server-supplied survey names that match the pattern the
+			# server itself uses for survey identifiers. This prevents a
+			# malicious/compromised server from returning a name like
+			# "../../.Rprofile" that would otherwise flow into file.path() below
+			# and escape survey_dir when the XLSX is written to disk.
+			if (!is.null(survey_name) &&
+					!grepl("^[a-zA-Z][a-zA-Z0-9_]{2,64}$", survey_name)) {
+				message("   [WARNING] Skipping survey with unsafe name: '", survey_name, "'")
+				survey_name <- NULL
+			}
+
 			if (!is.null(survey_name)) {
 				dest <- file.path(survey_dir, paste0(survey_name, ".xlsx"))
 				tryCatch({
@@ -448,7 +459,7 @@ sync_run_settings <- function(run_name, dir) {
 		
 		if (length(files_list) > 0) {
 			files_dir <- file.path(dir, "files")
-			
+
 			# Strict check for subfolder creation
 			if (!dir.exists(files_dir)) {
 				if (!dir.create(files_dir, recursive = TRUE)) {
@@ -456,12 +467,54 @@ sync_run_settings <- function(run_name, dir) {
 					return()
 				}
 			}
-			
+
+			# Pin downloads to the authenticated origin. Accept exact match,
+			# a super/sub relationship (e.g. api.formr.org ↔ formr.org), or
+			# a shared parent so siblings like api.formr.org and cdn.formr.org
+			# both resolve. The sibling check approximates eTLD+1 by
+			# stripping the leading label; it is gated on each host having
+			# ≥ 3 labels so that e.g. a.com and b.com don't collapse into
+			# "com". This is imperfect on public-suffix TLDs like .co.uk
+			# (example.co.uk and evil.co.uk would be treated as siblings) —
+			# acceptable because this is defense-in-depth on top of the
+			# basename() sanitisation of the destination path.
+			session <- formr_api_session()
+			expected_host <- if (!is.null(session)) tolower(session$base_url$hostname) else NULL
+			expected_parts <- if (!is.null(expected_host)) strsplit(expected_host, ".", fixed = TRUE)[[1]] else NULL
+
 			f_count <- 0
 			for (f in files_list) {
-				safe_name <- gsub(" ", "_", f$name)
+				# Strip any directory component from the server-supplied name before
+				# joining with files_dir — otherwise "../../.Rprofile" would escape
+				# files_dir and overwrite arbitrary user-owned files.
+				raw_name <- f$name
+				base_name <- basename(raw_name)
+				if (is.null(raw_name) || !nzchar(base_name) ||
+						base_name %in% c(".", "..") ||
+						grepl("[/\\\\]", raw_name) ||
+						startsWith(base_name, ".")) {
+					message("   [WARNING] Skipping file with unsafe name: '", raw_name, "'")
+					next
+				}
+				safe_name <- gsub(" ", "_", base_name)
 				dest <- file.path(files_dir, safe_name)
-				
+
+				parsed <- tryCatch(httr::parse_url(f$url), error = function(e) NULL)
+				parsed_host <- if (!is.null(parsed$hostname)) tolower(parsed$hostname) else NULL
+				host_ok <- FALSE
+				if (!is.null(parsed_host) && !is.null(expected_host)) {
+					parsed_parts <- strsplit(parsed_host, ".", fixed = TRUE)[[1]]
+					host_ok <- identical(parsed_host, expected_host) ||
+						endsWith(parsed_host, paste0(".", expected_host)) ||
+						endsWith(expected_host, paste0(".", parsed_host)) ||
+						(length(parsed_parts) >= 3 && length(expected_parts) >= 3 &&
+						 identical(parsed_parts[-1], expected_parts[-1]))
+				}
+				if (is.null(parsed) || !isTRUE(parsed$scheme %in% c("http", "https")) || !host_ok) {
+					message("   [WARNING] Skipping file with unsafe URL for '", raw_name, "'")
+					next
+				}
+
 				tryCatch({
 					download.file(f$url, dest, mode = "wb", quiet = TRUE)
 					f_count <- f_count + 1
