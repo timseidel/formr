@@ -85,12 +85,14 @@ formr_api_authenticate <- function(host = "https://formr.org",
 																	 access_token = NULL,
 																	 account = NULL) {
 	
-	# 0. Try to load from Global Environment if missing
-	if (is.null(access_token) && exists("access_token", envir = .GlobalEnv)) {
-		access_token <- get("access_token", envir = .GlobalEnv)
+	# 0. Try to load from the calling environment chain (OpenCPU) or Global Environment if missing
+	if ((missing(access_token) || is.null(access_token)) && exists("access_token", envir = parent.frame(), inherits = TRUE)) {
+		access_token <- get("access_token", envir = parent.frame(), inherits = TRUE)
 	}
-	if (is.null(host) && exists("host", envir = .GlobalEnv)) {
-		host <- get("host", envir = .GlobalEnv)
+	
+	# Use missing() to ensure we can override the default host argument if defined in the outer scope
+	if ((missing(host) || is.null(host)) && exists("host", envir = parent.frame(), inherits = TRUE)) {
+		host <- get("host", envir = parent.frame(), inherits = TRUE)
 	}
 	
 	# 1. Try to load from Keyring if missing
