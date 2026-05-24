@@ -31,7 +31,7 @@ experience.
   conditional display settings within your survey units.
 
 [You can get started right
-here!](https://rubenarslan.github.io/formr/vignettes/getting-started.Rmd)
+here!](https://rubenarslan.github.io/formr/articles/getting-started.html)
 
 ## Installation
 

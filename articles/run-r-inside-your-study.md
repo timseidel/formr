@@ -63,7 +63,8 @@ in important ways:
 | Auto-computes scales | Yes | No |
 | Returns processed data | Yes | No |
 | `item_names` filter | No | Yes |
-| Default `run_name` | `.formr$run_name` | Required (pass explicitly) |
+| Default `run_name` | `.formr$run_name` | `.formr$run_name` |
+| Default `join` | `TRUE` | `FALSE` |
 
 Inside a run, you almost always want
 [`formr_api_fetch_results()`](https://rubenarslan.github.io/formr/reference/formr_api_fetch_results.md)
