@@ -1,0 +1,25 @@
+# Disconnect from formr
+
+Disconnects from formr if connected.
+
+## Usage
+
+``` r
+formr_disconnect(host = formr_last_host())
+```
+
+## Arguments
+
+- host:
+
+  defaults to
+  [`formr_last_host()`](https://rubenarslan.github.io/formr/reference/formr_last_host.md),
+  which defaults to https://rforms.org
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+formr_disconnect()
+} # }
+```
